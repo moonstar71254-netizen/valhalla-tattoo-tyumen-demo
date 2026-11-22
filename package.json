@@ -1,7 +1,7 @@
 {
-  "name": "valhalla-tattoo-tyumen",
+  "name": "valhalla-tattoo-tyumen-demo",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,12 +10,14 @@
   },
   "dependencies": {
     "@gsap/react": "^2.1.1",
+    "@react-three/drei": "^9.114.3",
+    "@react-three/fiber": "^8.17.10",
     "gsap": "^3.12.5",
-    "lenis": "^1.1.18",
-    "lucide-react": "^0.468.0",
+    "lenis": "^1.1.14",
     "motion": "^12.0.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "three": "^0.169.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",

@@ -7,6 +7,15 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    emptyOutDir: true
-  }
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'three-core': ['three'],
+          'r3f-drei': ['@react-three/fiber', '@react-three/drei'],
+          'motion-scroll': ['gsap', '@gsap/react', 'motion', 'lenis'],
+        },
+      },
+    },
+  },
 });
