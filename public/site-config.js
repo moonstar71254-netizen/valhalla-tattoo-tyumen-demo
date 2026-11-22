@@ -31,12 +31,12 @@ window.SITE_CONFIG = {
     platform: '2ГИС'
   },
 
-  /* Пути к фотографиям (замените файлы в папке images/, сохранив имена или обновив пути ниже) */
+  /* Пути к фотографиям (замените файлы в папке images/ и обновите имена ниже при необходимости) */
   images: {
-    heroHall: './images/hero-hall.jpg',
-    studioLounge: './images/studio-lounge.jpg',
-    craftProcess: './images/craft-blackwork.jpg',
-    merchArtifacts: './images/artifacts-merch.jpg'
+    heroHall: './images/hero-hall.svg',
+    studioLounge: './images/studio-lounge.svg',
+    craftProcess: './images/craft-blackwork.svg',
+    merchArtifacts: './images/artifacts-merch.svg'
   },
 
   /* Блок об атмосфере студии */

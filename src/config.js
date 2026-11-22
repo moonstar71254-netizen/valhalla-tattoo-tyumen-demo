@@ -31,10 +31,10 @@ export function getSiteConfig() {
       ...(cfg.rating || {})
     },
     images: {
-      heroHall: './images/hero-hall.jpg',
-      studioLounge: './images/studio-lounge.jpg',
-      craftProcess: './images/craft-blackwork.jpg',
-      merchArtifacts: './images/artifacts-merch.jpg',
+      heroHall: './images/hero-hall.svg',
+      studioLounge: './images/studio-lounge.svg',
+      craftProcess: './images/craft-blackwork.svg',
+      merchArtifacts: './images/artifacts-merch.svg',
       ...(cfg.images || {})
     },
     hall: {
