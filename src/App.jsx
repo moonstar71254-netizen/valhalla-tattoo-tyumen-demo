@@ -64,6 +64,7 @@ function createInitialSceneState() {
   const r = new THREE.Color(p.rim);
   const f = new THREE.Color(p.fill);
   const e = new THREE.Color(p.emissive);
+  const c = new THREE.Color(p.cursorLight);
   return {
     chainOffset: 0,
     yShift: p.yShift,
@@ -73,6 +74,11 @@ function createInitialSceneState() {
     lookX: p.look[0],
     lookY: p.look[1],
     lookZ: p.look[2],
+    haloX: p.haloPos[0],
+    haloY: p.haloPos[1],
+    haloZ: p.haloPos[2],
+    haloScale: p.haloScale,
+    haloRotY: p.haloRotY,
     keyR: k.r,
     keyG: k.g,
     keyB: k.b,
@@ -85,6 +91,9 @@ function createInitialSceneState() {
     emR: e.r,
     emG: e.g,
     emB: e.b,
+    curR: c.r,
+    curG: c.g,
+    curB: c.b,
   };
 }
 
@@ -92,12 +101,47 @@ function formatRub(value) {
   return `${Number(value).toLocaleString('ru-RU')} ₽`;
 }
 
+function getTransitionMode(prev, target) {
+  const low = Math.min(prev, target);
+  const high = Math.max(prev, target);
+  if (low === 0 && high === 1) return 'flyZ';
+  if (low === 1 && high === 2) return 'orbitalX';
+  if (low === 2 && high === 3) return 'counter';
+  if (low === 3 && high === 4) return 'pullback';
+  if (target === 1) return 'flyZ';
+  if (target === 2) return 'orbitalX';
+  if (target === 3) return 'counter';
+  if (target === 4) return 'pullback';
+  return 'flyZ';
+}
+
+function handleTiltMove(e, maxDeg = 6) {
+  const el = e.currentTarget;
+  const rect = el.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const px = (e.clientX - rect.left) / rect.width;
+  const py = (e.clientY - rect.top) / rect.height;
+  const rx = (0.5 - py) * maxDeg * 2;
+  const ry = (px - 0.5) * maxDeg * 2;
+  el.style.setProperty('--rx', `${rx.toFixed(2)}deg`);
+  el.style.setProperty('--ry', `${ry.toFixed(2)}deg`);
+  el.style.setProperty('--gx', `${(px * 100).toFixed(1)}%`);
+  el.style.setProperty('--gy', `${(py * 100).toFixed(1)}%`);
+}
+
+function handleTiltLeave(e) {
+  const el = e.currentTarget;
+  el.style.setProperty('--rx', '0deg');
+  el.style.setProperty('--ry', '0deg');
+  el.style.setProperty('--gx', '50%');
+  el.style.setProperty('--gy', '50%');
+}
+
 export default function App() {
   const config = useMemo(() => window.SITE_CONFIG || DEFAULT_CONFIG, []);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [selectedTier, setSelectedTier] = useState(
-    config.certificates.tiers?.[2] || 10000
-  );
+  const tiers = config.certificates.tiers || [1500, 5000, 10000, 25000, 50000, 100000];
+  const [selectedTier, setSelectedTier] = useState(tiers[2] || 10000);
 
   const activeIndexRef = useRef(0);
   const isTransitioningRef = useRef(false);
@@ -106,19 +150,36 @@ export default function App() {
   const pointerRef = useRef({ x: 0, y: 0 });
   const tlRef = useRef(null);
 
-  const animateIn = useCallback((el, startAt, tl) => {
+  const tierIntensity = useMemo(() => {
+    const idx = Math.max(0, tiers.indexOf(selectedTier));
+    return (0.28 + (idx / Math.max(1, tiers.length - 1)) * 0.72).toFixed(2);
+  }, [tiers, selectedTier]);
+
+  const resetSceneProps = useCallback((el) => {
+    if (!el) return;
+    const inner = el.querySelector('.scene-inner');
+    const targets = [
+      inner,
+      ...el.querySelectorAll('.mask-inner, .draw-line, .stagger-item, .counter-head, .counter-row, .cert-stage-wrap'),
+    ].filter(Boolean);
+    gsap.set(targets, {
+      clearProps: 'transform,opacity,filter',
+    });
+  }, []);
+
+  const animateIntro = useCallback((el, tl) => {
     if (!el) return;
     const masks = el.querySelectorAll('.mask-inner');
     const lines = el.querySelectorAll('.draw-line');
     const items = el.querySelectorAll('.stagger-item');
 
-    tl.set(el, { visibility: 'visible', pointerEvents: 'auto', zIndex: 20 }, startAt);
+    tl.set(el, { visibility: 'visible', pointerEvents: 'auto', zIndex: 20 }, 0.08);
     if (masks.length) {
       tl.fromTo(
         masks,
-        { yPercent: 110 },
-        { yPercent: 0, duration: 0.72, stagger: 0.08, ease: 'expo.out' },
-        startAt
+        { yPercent: 112 },
+        { yPercent: 0, duration: 0.78, stagger: 0.09, ease: 'expo.out' },
+        0.1
       );
     }
     if (lines.length) {
@@ -126,15 +187,15 @@ export default function App() {
         lines,
         { scaleX: 0 },
         { scaleX: 1, duration: 0.65, stagger: 0.06, ease: 'expo.out' },
-        startAt + 0.08
+        0.18
       );
     }
     if (items.length) {
       tl.fromTo(
         items,
-        { y: 26, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.56, stagger: 0.07, ease: 'power3.out' },
-        startAt + 0.12
+        { z: -60, scale: 0.94, opacity: 0 },
+        { z: 0, scale: 1, opacity: 1, duration: 0.62, stagger: 0.07, ease: 'power3.out' },
+        0.22
       );
     }
   }, []);
@@ -146,7 +207,8 @@ export default function App() {
       if (target === prev || isTransitioningRef.current) return;
 
       isTransitioningRef.current = true;
-      const direction = target > prev ? 1 : -1;
+      const dir = target > prev ? 1 : -1;
+      const mode = getTransitionMode(prev, target);
       const prevEl = sceneRefs.current[prev];
       const nextEl = sceneRefs.current[target];
 
@@ -157,11 +219,16 @@ export default function App() {
       const r = new THREE.Color(preset.rim);
       const f = new THREE.Color(preset.fill);
       const e = new THREE.Color(preset.emissive);
+      const c = new THREE.Color(preset.cursorLight);
 
       const tl = gsap.timeline({
         onComplete: () => {
           if (prevEl) {
             gsap.set(prevEl, { visibility: 'hidden', pointerEvents: 'none', zIndex: 10 });
+            resetSceneProps(prevEl);
+          }
+          if (nextEl) {
+            resetSceneProps(nextEl);
           }
           isTransitioningRef.current = false;
         },
@@ -171,7 +238,7 @@ export default function App() {
       tl.to(
         sceneStateRef.current,
         {
-          chainOffset: sceneStateRef.current.chainOffset + direction * 0.14,
+          chainOffset: sceneStateRef.current.chainOffset + dir * 0.14,
           yShift: preset.yShift,
           camX: preset.cam[0],
           camY: preset.cam[1],
@@ -179,6 +246,11 @@ export default function App() {
           lookX: preset.look[0],
           lookY: preset.look[1],
           lookZ: preset.look[2],
+          haloX: preset.haloPos[0],
+          haloY: preset.haloPos[1],
+          haloZ: preset.haloPos[2],
+          haloScale: preset.haloScale,
+          haloRotY: preset.haloRotY,
           keyR: k.r,
           keyG: k.g,
           keyB: k.b,
@@ -191,6 +263,9 @@ export default function App() {
           emR: e.r,
           emG: e.g,
           emB: e.b,
+          curR: c.r,
+          curG: c.g,
+          curB: c.b,
           duration: 1.15,
           ease: 'expo.inOut',
         },
@@ -198,37 +273,241 @@ export default function App() {
       );
 
       if (prevEl) {
-        const prevMasks = prevEl.querySelectorAll('.mask-inner');
+        const prevInner = prevEl.querySelector('.scene-inner');
         const prevLines = prevEl.querySelectorAll('.draw-line');
-        const prevItems = prevEl.querySelectorAll('.stagger-item');
+        const prevItems = prevEl.querySelectorAll('.stagger-item, .counter-head, .counter-row, .cert-stage-wrap');
 
         tl.set(prevEl, { pointerEvents: 'none' }, 0);
-        if (prevItems.length) {
+        if (prevLines.length) {
+          tl.to(prevLines, { scaleX: 0, duration: 0.26, ease: 'power3.in' }, 0);
+        }
+
+        if (mode === 'flyZ') {
+          if (dir > 0) {
+            tl.to(
+              prevInner,
+              { scale: 1.24, filter: 'blur(8px)', opacity: 0, duration: 0.4, ease: 'power3.in' },
+              0
+            );
+          } else {
+            tl.to(
+              prevInner,
+              { scale: 0.82, rotateX: 12, opacity: 0, duration: 0.4, ease: 'power3.in' },
+              0
+            );
+          }
+        } else if (mode === 'orbitalX') {
           tl.to(
             prevItems,
-            { y: -28, opacity: 0, duration: 0.34, stagger: 0.03, ease: 'power3.in' },
+            {
+              x: -140 * dir,
+              rotateY: -18 * dir,
+              opacity: 0,
+              duration: 0.38,
+              stagger: 0.02,
+              ease: 'power3.in',
+            },
+            0
+          );
+          tl.to(prevInner, { opacity: 0, duration: 0.38, ease: 'power3.in' }, 0.02);
+        } else if (mode === 'counter') {
+          tl.to(
+            prevItems,
+            {
+              x: -85 * dir,
+              y: -22 * dir,
+              rotateY: -10 * dir,
+              opacity: 0,
+              duration: 0.36,
+              stagger: 0.02,
+              ease: 'power3.in',
+            },
+            0
+          );
+          tl.to(prevInner, { opacity: 0, duration: 0.36, ease: 'power3.in' }, 0.02);
+        } else {
+          tl.to(
+            prevInner,
+            {
+              y: -48 * dir,
+              scale: 0.9,
+              rotateX: 9 * dir,
+              opacity: 0,
+              duration: 0.38,
+              ease: 'power3.in',
+            },
             0
           );
         }
-        if (prevMasks.length) {
-          tl.to(
-            prevMasks,
-            { yPercent: -110, duration: 0.36, stagger: 0.03, ease: 'power3.in' },
-            0.02
-          );
-        }
-        if (prevLines.length) {
-          tl.to(prevLines, { scaleX: 0, duration: 0.28, ease: 'power3.in' }, 0);
-        }
-        tl.set(prevEl, { visibility: 'hidden', zIndex: 10 }, 0.39);
+        tl.set(prevEl, { visibility: 'hidden', zIndex: 10 }, 0.41);
       }
 
       activeIndexRef.current = target;
       setActiveIndex(target);
 
-      animateIn(nextEl, 0.42, tl);
+      if (nextEl) {
+        const nextInner = nextEl.querySelector('.scene-inner');
+        const nextMasks = nextEl.querySelectorAll('.mask-inner');
+        const nextLines = nextEl.querySelectorAll('.draw-line');
+        const nextItems = nextEl.querySelectorAll('.stagger-item');
+        const counterHeads = nextEl.querySelectorAll('.counter-head');
+        const counterRows = nextEl.querySelectorAll('.counter-row');
+        const certWrap = nextEl.querySelector('.cert-stage-wrap');
+
+        const startAt = 0.42;
+        tl.set(nextEl, { visibility: 'visible', pointerEvents: 'auto', zIndex: 20 }, startAt);
+        tl.set(nextInner, { opacity: 1, scale: 1, x: 0, y: 0, rotateX: 0, rotateY: 0, filter: 'blur(0px)' }, startAt);
+
+        if (nextLines.length) {
+          tl.fromTo(
+            nextLines,
+            { scaleX: 0 },
+            { scaleX: 1, duration: 0.65, stagger: 0.05, ease: 'expo.out' },
+            startAt + 0.08
+          );
+        }
+
+        if (mode === 'flyZ') {
+          if (dir > 0) {
+            tl.fromTo(
+              nextInner,
+              { scale: 0.82, rotateX: 12, opacity: 0 },
+              { scale: 1, rotateX: 0, opacity: 1, duration: 0.72, ease: 'expo.out' },
+              startAt
+            );
+          } else {
+            tl.fromTo(
+              nextInner,
+              { scale: 1.24, filter: 'blur(8px)', opacity: 0 },
+              { scale: 1, filter: 'blur(0px)', opacity: 1, duration: 0.72, ease: 'expo.out' },
+              startAt
+            );
+          }
+          if (nextMasks.length) {
+            tl.fromTo(
+              nextMasks,
+              { yPercent: 105 * dir },
+              { yPercent: 0, duration: 0.68, stagger: 0.07, ease: 'expo.out' },
+              startAt + 0.04
+            );
+          }
+          if (nextItems.length) {
+            tl.fromTo(
+              nextItems,
+              { z: -50 * dir, opacity: 0 },
+              { z: 0, opacity: 1, duration: 0.6, stagger: 0.06, ease: 'power3.out' },
+              startAt + 0.1
+            );
+          }
+        } else if (mode === 'orbitalX') {
+          if (nextMasks.length) {
+            tl.fromTo(
+              nextMasks,
+              { x: 110 * dir, opacity: 0 },
+              { x: 0, opacity: 1, duration: 0.72, stagger: 0.07, ease: 'expo.out' },
+              startAt
+            );
+          }
+          if (nextItems.length) {
+            tl.fromTo(
+              nextItems,
+              { x: 140 * dir, y: -30 * dir, rotateY: 18 * dir, opacity: 0 },
+              {
+                x: 0,
+                y: 0,
+                rotateY: 0,
+                opacity: 1,
+                duration: 0.72,
+                stagger: 0.06,
+                ease: 'expo.out',
+              },
+              startAt + 0.04
+            );
+          }
+        } else if (mode === 'counter') {
+          if (counterHeads.length) {
+            tl.fromTo(
+              counterHeads,
+              { x: -90 * dir, y: -30 * dir, opacity: 0 },
+              { x: 0, y: 0, opacity: 1, duration: 0.68, stagger: 0.06, ease: 'expo.out' },
+              startAt
+            );
+          }
+          if (nextMasks.length) {
+            tl.fromTo(
+              nextMasks,
+              { x: -70 * dir, yPercent: 80 * dir },
+              { x: 0, yPercent: 0, duration: 0.7, stagger: 0.07, ease: 'expo.out' },
+              startAt
+            );
+          }
+          if (counterRows.length) {
+            tl.fromTo(
+              counterRows,
+              { x: 90 * dir, y: 24 * dir, rotateY: -10 * dir, opacity: 0 },
+              {
+                x: 0,
+                y: 0,
+                rotateY: 0,
+                opacity: 1,
+                duration: 0.68,
+                stagger: 0.06,
+                ease: 'expo.out',
+              },
+              startAt + 0.06
+            );
+          }
+          if (nextItems.length) {
+            tl.fromTo(
+              nextItems,
+              { x: -60 * dir, y: 22 * dir, opacity: 0 },
+              { x: 0, y: 0, opacity: 1, duration: 0.6, stagger: 0.05, ease: 'power3.out' },
+              startAt + 0.14
+            );
+          }
+        } else {
+          if (nextMasks.length) {
+            tl.fromTo(
+              nextMasks,
+              { x: -55 * dir, yPercent: 95 * dir },
+              { x: 0, yPercent: 0, duration: 0.72, stagger: 0.07, ease: 'expo.out' },
+              startAt
+            );
+          }
+          if (nextItems.length) {
+            tl.fromTo(
+              nextItems,
+              { x: -70 * dir, y: 50 * dir, opacity: 0 },
+              {
+                x: 0,
+                y: 0,
+                opacity: 1,
+                duration: 0.7,
+                stagger: 0.055,
+                ease: 'expo.out',
+              },
+              startAt + 0.04
+            );
+          }
+          if (certWrap) {
+            tl.fromTo(
+              certWrap,
+              { rotateY: 32 * dir, scale: 0.86, x: 70 * dir, opacity: 0 },
+              {
+                rotateY: 0,
+                scale: 1,
+                x: 0,
+                opacity: 1,
+                duration: 0.78,
+                ease: 'expo.out',
+              },
+              startAt + 0.08
+            );
+          }
+        }
+      }
     },
-    [animateIn]
+    [resetSceneProps]
   );
 
   useEffect(() => {
@@ -243,17 +522,18 @@ export default function App() {
 
     const introTl = gsap.timeline({
       onComplete: () => {
+        resetSceneProps(sceneRefs.current[0]);
         isTransitioningRef.current = false;
       },
     });
     isTransitioningRef.current = true;
-    animateIn(sceneRefs.current[0], 0.12, introTl);
+    animateIntro(sceneRefs.current[0], introTl);
     tlRef.current = introTl;
 
     return () => {
       introTl.kill();
     };
-  }, [animateIn]);
+  }, [animateIntro, resetSceneProps]);
 
   useEffect(() => {
     const obs = Observer.create({
@@ -296,7 +576,11 @@ export default function App() {
 
   return (
     <div className="stage-root" data-mood={activeMood} data-scene={activeIndex}>
-      <ChainScene sceneStateRef={sceneStateRef} pointerRef={pointerRef} />
+      <ChainScene
+        sceneStateRef={sceneStateRef}
+        pointerRef={pointerRef}
+        activeScene={activeIndex}
+      />
       <div className="readability-scrim" aria-hidden="true" />
       <div className="grain-layer" aria-hidden="true" />
 
@@ -432,7 +716,12 @@ export default function App() {
 
               <div className="fact-list">
                 {config.atmosphere.facts.map((fact) => (
-                  <div key={fact.index} className="fact-row stagger-item">
+                  <div
+                    key={fact.index}
+                    className="fact-row tilt-surface stagger-item"
+                    onPointerMove={(e) => handleTiltMove(e, 5)}
+                    onPointerLeave={handleTiltLeave}
+                  >
                     <span className="draw-line fact-hairline" aria-hidden="true" />
                     <span className="fact-index">{fact.index}</span>
                     <span className="fact-text">{fact.text}</span>
@@ -470,7 +759,12 @@ export default function App() {
 
               <div className="fact-list">
                 {config.approach.facts.map((fact) => (
-                  <div key={fact.index} className="fact-row stagger-item">
+                  <div
+                    key={fact.index}
+                    className="fact-row tilt-surface stagger-item"
+                    onPointerMove={(e) => handleTiltMove(e, 5)}
+                    onPointerLeave={handleTiltLeave}
+                  >
                     <span className="draw-line fact-hairline" aria-hidden="true" />
                     <span className="fact-index">{fact.index}</span>
                     <span className="fact-text">{fact.text}</span>
@@ -491,12 +785,12 @@ export default function App() {
         >
           <div className="scene-inner">
             <div className="editorial-column wide-col">
-              <div className="eyebrow stagger-item">
+              <div className="eyebrow counter-head">
                 <span className="eyebrow-line draw-line" aria-hidden="true" />
                 <span>{config.services.kicker}</span>
               </div>
 
-              <h2 className="scene-title">
+              <h2 className="scene-title counter-head">
                 {config.services.titleLines.map((line) => (
                   <span key={line} className="mask-line">
                     <span className="mask-inner">{line}</span>
@@ -506,7 +800,12 @@ export default function App() {
 
               <div className="price-list">
                 {config.services.items.map((item) => (
-                  <div key={item.name} className="price-row stagger-item">
+                  <div
+                    key={item.name}
+                    className="price-row tilt-surface counter-row"
+                    onPointerMove={(e) => handleTiltMove(e, 5)}
+                    onPointerLeave={handleTiltLeave}
+                  >
                     <span className="price-name">{item.name}</span>
                     <span className="price-value">{item.price}</span>
                     <span className="draw-line price-hairline" aria-hidden="true" />
@@ -536,8 +835,8 @@ export default function App() {
           data-scene-id="contacts"
           aria-hidden={activeIndex !== 4}
         >
-          <div className="scene-inner">
-            <div className="editorial-column wide-col">
+          <div className="scene-inner contacts-split">
+            <div className="editorial-column contacts-left">
               <div className="eyebrow stagger-item">
                 <span className="eyebrow-line draw-line" aria-hidden="true" />
                 <span>{config.certificates.kicker}</span>
@@ -554,7 +853,7 @@ export default function App() {
               <p className="scene-lead stagger-item">{config.certificates.merchNote}</p>
 
               <div className="tier-list stagger-item" role="group" aria-label="Номинал сертификата">
-                {config.certificates.tiers.map((tier) => (
+                {tiers.map((tier) => (
                   <button
                     key={tier}
                     type="button"
@@ -571,7 +870,7 @@ export default function App() {
                   href={config.contacts.telegramStudioUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn-primary"
+                  className="btn-primary cert-cta-btn"
                 >
                   Оформить на {formatRub(selectedTier)}
                 </a>
@@ -613,6 +912,37 @@ export default function App() {
                   >
                     ВКонтакте
                   </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="cert-stage-wrap">
+              <div
+                className="cert-card-3d"
+                style={{ '--glow-strength': tierIntensity }}
+                onPointerMove={(e) => handleTiltMove(e, 10)}
+                onPointerLeave={handleTiltLeave}
+              >
+                <div className="cert-card-edge" aria-hidden="true" />
+                <div className="cert-card-face">
+                  <div className="cert-card-sheen" aria-hidden="true" />
+                  <div className="cert-card-top">
+                    <span className="cert-card-brand">
+                      <span className="cert-rune-dot" />
+                      ВАЛЬХАЛЛА ТАТУ
+                    </span>
+                    <span className="cert-card-serial">№ VL-72</span>
+                  </div>
+
+                  <div className="cert-card-center">
+                    <span className="cert-card-label">ПОДАРОЧНЫЙ СЕРТИФИКАТ</span>
+                    <div className="cert-card-amount">{formatRub(selectedTier)}</div>
+                  </div>
+
+                  <div className="cert-card-bottom">
+                    <span>Тюмень · ул. Достоевского, 7</span>
+                    <span>Металл · Без срока</span>
+                  </div>
                 </div>
               </div>
             </div>
