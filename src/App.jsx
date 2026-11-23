@@ -109,6 +109,7 @@ function getTransitionMode(prev, target) {
   if (low === 1 && high === 2) return 'orbitalX';
   if (low === 2 && high === 3) return 'counter';
   if (low === 3 && high === 4) return 'pullback';
+  // Direct nav jumps map cleanly to destination spatial signature
   if (target === 1) return 'flyZ';
   if (target === 2) return 'orbitalX';
   if (target === 3) return 'counter';
@@ -116,26 +117,106 @@ function getTransitionMode(prev, target) {
   return 'flyZ';
 }
 
-function handleTiltMove(e, maxDeg = 6) {
+const tiltStateMap = new WeakMap();
+
+function getTiltState(el) {
+  let state = tiltStateMap.get(el);
+  if (!state) {
+    state = {
+      curRx: 0,
+      curRy: 0,
+      curGx: 50,
+      curGy: 50,
+      targetRx: 0,
+      targetRy: 0,
+      targetGx: 50,
+      targetGy: 50,
+      active: false,
+      baseRect: null,
+      rafId: null,
+    };
+    tiltStateMap.set(el, state);
+  }
+  return state;
+}
+
+function stepSurfaceTilt(el) {
+  const state = tiltStateMap.get(el);
+  if (!state) return;
+  const lerp = 0.16;
+  state.curRx += (state.targetRx - state.curRx) * lerp;
+  state.curRy += (state.targetRy - state.curRy) * lerp;
+  state.curGx += (state.targetGx - state.curGx) * lerp;
+  state.curGy += (state.targetGy - state.curGy) * lerp;
+
+  el.style.setProperty('--rx', `${state.curRx.toFixed(2)}deg`);
+  el.style.setProperty('--ry', `${state.curRy.toFixed(2)}deg`);
+  el.style.setProperty('--gx', `${state.curGx.toFixed(1)}%`);
+  el.style.setProperty('--gy', `${state.curGy.toFixed(1)}%`);
+
+  const done =
+    Math.abs(state.targetRx - state.curRx) < 0.01 &&
+    Math.abs(state.targetRy - state.curRy) < 0.01 &&
+    Math.abs(state.targetGx - state.curGx) < 0.05 &&
+    Math.abs(state.targetGy - state.curGy) < 0.05;
+
+  if (done) {
+    state.curRx = state.targetRx;
+    state.curRy = state.targetRy;
+    state.curGx = state.targetGx;
+    state.curGy = state.targetGy;
+    el.style.setProperty('--rx', `${state.curRx.toFixed(2)}deg`);
+    el.style.setProperty('--ry', `${state.curRy.toFixed(2)}deg`);
+    el.style.setProperty('--gx', `${state.curGx.toFixed(1)}%`);
+    el.style.setProperty('--gy', `${state.curGy.toFixed(1)}%`);
+    state.rafId = null;
+    if (!state.active) {
+      el.classList.remove('is-tilting');
+    }
+    return;
+  }
+
+  state.rafId = requestAnimationFrame(() => stepSurfaceTilt(el));
+}
+
+function handleTiltMove(e, maxDeg = 2.5) {
   const el = e.currentTarget;
-  const rect = el.getBoundingClientRect();
+  const state = getTiltState(el);
+  if (!state.active) {
+    state.baseRect = el.getBoundingClientRect();
+    state.active = true;
+    el.classList.add('is-tilting');
+  }
+  const rect = state.baseRect || el.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
-  const px = (e.clientX - rect.left) / rect.width;
-  const py = (e.clientY - rect.top) / rect.height;
-  const rx = (0.5 - py) * maxDeg * 2;
-  const ry = (px - 0.5) * maxDeg * 2;
-  el.style.setProperty('--rx', `${rx.toFixed(2)}deg`);
-  el.style.setProperty('--ry', `${ry.toFixed(2)}deg`);
-  el.style.setProperty('--gx', `${(px * 100).toFixed(1)}%`);
-  el.style.setProperty('--gy', `${(py * 100).toFixed(1)}%`);
+
+  const px = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+  const py = Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height));
+  const clampedMax = Math.min(3, Math.max(1, maxDeg));
+
+  state.targetRx = (0.5 - py) * clampedMax * 2;
+  state.targetRy = (px - 0.5) * clampedMax * 2;
+  state.targetGx = px * 100;
+  state.targetGy = py * 100;
+
+  if (!state.rafId) {
+    state.rafId = requestAnimationFrame(() => stepSurfaceTilt(el));
+  }
 }
 
 function handleTiltLeave(e) {
   const el = e.currentTarget;
-  el.style.setProperty('--rx', '0deg');
-  el.style.setProperty('--ry', '0deg');
-  el.style.setProperty('--gx', '50%');
-  el.style.setProperty('--gy', '50%');
+  const state = getTiltState(el);
+  state.active = false;
+  state.baseRect = null;
+  state.targetRx = 0;
+  state.targetRy = 0;
+  state.targetGx = 50;
+  state.targetGy = 50;
+
+  if (!state.rafId) {
+    state.rafId = requestAnimationFrame(() => stepSurfaceTilt(el));
+  }
 }
 
 export default function App() {
@@ -151,6 +232,98 @@ export default function App() {
   const pointerRef = useRef({ x: 0, y: 0 });
   const tlRef = useRef(null);
   const transitionTimerRef = useRef(null);
+  const certCardRef = useRef(null);
+  const certTiltRef = useRef({
+    curRx: 0,
+    curRy: 0,
+    curGx: 50,
+    curGy: 50,
+    targetRx: 0,
+    targetRy: 0,
+    targetGx: 50,
+    targetGy: 50,
+    rafId: null,
+  });
+
+  const stepCertTilt = useCallback(() => {
+    const card = certCardRef.current;
+    const st = certTiltRef.current;
+    if (!card) {
+      st.rafId = null;
+      return;
+    }
+
+    const lerp = 0.14;
+    st.curRx += (st.targetRx - st.curRx) * lerp;
+    st.curRy += (st.targetRy - st.curRy) * lerp;
+    st.curGx += (st.targetGx - st.curGx) * lerp;
+    st.curGy += (st.targetGy - st.curGy) * lerp;
+
+    card.style.setProperty('--rx', `${st.curRx.toFixed(2)}deg`);
+    card.style.setProperty('--ry', `${st.curRy.toFixed(2)}deg`);
+    card.style.setProperty('--gx', `${st.curGx.toFixed(1)}%`);
+    card.style.setProperty('--gy', `${st.curGy.toFixed(1)}%`);
+
+    const settled =
+      Math.abs(st.targetRx - st.curRx) < 0.01 &&
+      Math.abs(st.targetRy - st.curRy) < 0.01 &&
+      Math.abs(st.targetGx - st.curGx) < 0.01 &&
+      Math.abs(st.targetGy - st.curGy) < 0.01;
+
+    if (settled) {
+      st.curRx = st.targetRx;
+      st.curRy = st.targetRy;
+      st.curGx = st.targetGx;
+      st.curGy = st.targetGy;
+      card.style.setProperty('--rx', `${st.curRx.toFixed(2)}deg`);
+      card.style.setProperty('--ry', `${st.curRy.toFixed(2)}deg`);
+      card.style.setProperty('--gx', `${st.curGx.toFixed(1)}%`);
+      card.style.setProperty('--gy', `${st.curGy.toFixed(1)}%`);
+      st.rafId = null;
+      return;
+    }
+
+    st.rafId = requestAnimationFrame(stepCertTilt);
+  }, []);
+
+  const handleCertMove = useCallback(
+    (e) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const px = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+      const py = Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height));
+      const maxDeg = 10;
+      const st = certTiltRef.current;
+      st.targetRx = (0.5 - py) * maxDeg * 2;
+      st.targetRy = (px - 0.5) * maxDeg * 2;
+      st.targetGx = px * 100;
+      st.targetGy = py * 100;
+      if (!st.rafId) {
+        st.rafId = requestAnimationFrame(stepCertTilt);
+      }
+    },
+    [stepCertTilt]
+  );
+
+  const handleCertLeave = useCallback(() => {
+    const st = certTiltRef.current;
+    st.targetRx = 0;
+    st.targetRy = 0;
+    st.targetGx = 50;
+    st.targetGy = 50;
+    if (!st.rafId) {
+      st.rafId = requestAnimationFrame(stepCertTilt);
+    }
+  }, [stepCertTilt]);
+
+  useEffect(() => {
+    return () => {
+      if (certTiltRef.current.rafId) {
+        cancelAnimationFrame(certTiltRef.current.rafId);
+        certTiltRef.current.rafId = null;
+      }
+    };
+  }, []);
 
   const tierIntensity = useMemo(() => {
     const idx = Math.max(0, tiers.indexOf(selectedTier));
@@ -203,10 +376,11 @@ export default function App() {
   }, []);
 
   const goToScene = useCallback(
-    (nextIndex) => {
+    (nextIndex, force = false) => {
       const target = Math.max(0, Math.min(SCENES.length - 1, nextIndex));
       const prev = activeIndexRef.current;
-      if (target === prev || isTransitioningRef.current) return;
+      if (target === prev) return;
+      if (isTransitioningRef.current && !force) return;
 
       isTransitioningRef.current = true;
       if (transitionTimerRef.current) {
@@ -219,6 +393,13 @@ export default function App() {
       const nextEl = sceneRefs.current[target];
 
       if (tlRef.current) tlRef.current.kill();
+
+      // Ensure no stray scenes remain visible when interrupting a transition
+      sceneRefs.current.forEach((el, idx) => {
+        if (!el || idx === prev || idx === target) return;
+        gsap.set(el, { visibility: 'hidden', pointerEvents: 'none', zIndex: 10 });
+        resetSceneProps(el);
+      });
 
       const preset = SCENE_CAMERA_PRESETS[target];
       const k = new THREE.Color(preset.key);
@@ -257,6 +438,7 @@ export default function App() {
         transitionTimerRef.current = null;
       }, 1350);
 
+      // 3D World transition (1.15s)
       tl.to(
         sceneStateRef.current,
         {
@@ -294,6 +476,7 @@ export default function App() {
         0
       );
 
+      // Outgoing scene spatial exit (0.00 -> 0.40s)
       if (prevEl) {
         const prevInner = prevEl.querySelector('.scene-inner');
         const prevLines = prevEl.querySelectorAll('.draw-line');
@@ -348,6 +531,7 @@ export default function App() {
           );
           tl.to(prevInner, { opacity: 0, duration: 0.36, ease: 'power3.in' }, 0.02);
         } else {
+          // pullback
           tl.to(
             prevInner,
             {
@@ -367,6 +551,7 @@ export default function App() {
       activeIndexRef.current = target;
       setActiveIndex(target);
 
+      // Incoming scene spatial entry (0.42 -> 1.15s)
       if (nextEl) {
         const nextInner = nextEl.querySelector('.scene-inner');
         const nextMasks = nextEl.querySelectorAll('.mask-inner');
@@ -447,6 +632,7 @@ export default function App() {
             );
           }
         } else if (mode === 'counter') {
+          // Counter-motion: head from top-left, price rows from bottom-right with 3D tilt
           if (counterHeads.length) {
             tl.fromTo(
               counterHeads,
@@ -488,6 +674,7 @@ export default function App() {
             );
           }
         } else {
+          // pullback: contacts from bottom-left, 3D cert card unfolds from right rotateY 32deg
           if (nextMasks.length) {
             tl.fromTo(
               nextMasks,
@@ -623,19 +810,21 @@ export default function App() {
         <button
           type="button"
           className="brand-mark"
-          onClick={() => goToScene(0)}
+          onClick={() => goToScene(0, true)}
         >
           <span className="brand-rune" aria-hidden="true" />
           <span>{config.brand.shortName}</span>
         </button>
 
-        <nav className="header-nav" aria-label="Навигация по сценам">
+        <nav className="header-nav" aria-label="Навигация по сценам" data-active-scene={activeIndex}>
           {SCENES.map((scene, idx) => (
             <button
               key={scene.id}
               type="button"
               className={`nav-link ${activeIndex === idx ? 'is-active' : ''}`}
-              onClick={() => goToScene(idx)}
+              aria-current={activeIndex === idx ? 'step' : undefined}
+              data-scene-target={idx}
+              onClick={() => goToScene(idx, true)}
             >
               {scene.label}
             </button>
@@ -652,13 +841,15 @@ export default function App() {
         </a>
       </header>
 
-      <aside className="chapter-rail" aria-label="Индикатор сцен">
+      <aside className="chapter-rail" aria-label="Индикатор сцен" data-active-scene={activeIndex}>
         {SCENES.map((scene, idx) => (
           <button
             key={scene.id}
             type="button"
             className={`chapter-dot ${activeIndex === idx ? 'is-active' : ''}`}
-            onClick={() => goToScene(idx)}
+            aria-current={activeIndex === idx ? 'step' : undefined}
+            data-scene-target={idx}
+            onClick={() => goToScene(idx, true)}
             aria-label={scene.label}
             title={scene.label}
           >
@@ -669,6 +860,7 @@ export default function App() {
       </aside>
 
       <main className="scenes-stack">
+        {/* Scene 0: Hero */}
         <section
           ref={(el) => {
             sceneRefs.current[0] = el;
@@ -706,7 +898,7 @@ export default function App() {
                 <button
                   type="button"
                   className="btn-ghost"
-                  onClick={() => goToScene(3)}
+                  onClick={() => goToScene(3, true)}
                 >
                   Смотреть прайс
                 </button>
@@ -716,7 +908,7 @@ export default function App() {
             <button
               type="button"
               className="scroll-cue stagger-item"
-              onClick={() => goToScene(1)}
+              onClick={() => goToScene(1, true)}
             >
               <span>{config.brand.scrollCue}</span>
               <span className="scroll-pulse" aria-hidden="true" />
@@ -724,6 +916,7 @@ export default function App() {
           </div>
         </section>
 
+        {/* Scene 1: Atmosphere */}
         <section
           ref={(el) => {
             sceneRefs.current[1] = el;
@@ -754,7 +947,7 @@ export default function App() {
                   <div
                     key={fact.index}
                     className="fact-row tilt-surface stagger-item"
-                    onPointerMove={(e) => handleTiltMove(e, 5)}
+                    onPointerMove={(e) => handleTiltMove(e, 2.5)}
                     onPointerLeave={handleTiltLeave}
                   >
                     <span className="draw-line fact-hairline" aria-hidden="true" />
@@ -767,6 +960,7 @@ export default function App() {
           </div>
         </section>
 
+        {/* Scene 2: Approach */}
         <section
           ref={(el) => {
             sceneRefs.current[2] = el;
@@ -797,7 +991,7 @@ export default function App() {
                   <div
                     key={fact.index}
                     className="fact-row tilt-surface stagger-item"
-                    onPointerMove={(e) => handleTiltMove(e, 5)}
+                    onPointerMove={(e) => handleTiltMove(e, 2.5)}
                     onPointerLeave={handleTiltLeave}
                   >
                     <span className="draw-line fact-hairline" aria-hidden="true" />
@@ -810,6 +1004,7 @@ export default function App() {
           </div>
         </section>
 
+        {/* Scene 3: Services & Price (Counter-motion assembly) */}
         <section
           ref={(el) => {
             sceneRefs.current[3] = el;
@@ -838,7 +1033,7 @@ export default function App() {
                   <div
                     key={item.name}
                     className="price-row tilt-surface counter-row"
-                    onPointerMove={(e) => handleTiltMove(e, 5)}
+                    onPointerMove={(e) => handleTiltMove(e, 2.5)}
                     onPointerLeave={handleTiltLeave}
                   >
                     <span className="price-name">{item.name}</span>
@@ -862,6 +1057,7 @@ export default function App() {
           </div>
         </section>
 
+        {/* Scene 4: Certificates, 3D Metal Card & Contacts */}
         <section
           ref={(el) => {
             sceneRefs.current[4] = el;
@@ -951,12 +1147,15 @@ export default function App() {
               </div>
             </div>
 
-            <div className="cert-stage-wrap">
+            <div
+              className="cert-stage-wrap"
+              onPointerMove={handleCertMove}
+              onPointerLeave={handleCertLeave}
+            >
               <div
+                ref={certCardRef}
                 className="cert-card-3d"
                 style={{ '--glow-strength': tierIntensity }}
-                onPointerMove={(e) => handleTiltMove(e, 10)}
-                onPointerLeave={handleTiltLeave}
               >
                 <div className="cert-card-edge" aria-hidden="true" />
                 <div className="cert-card-face">
