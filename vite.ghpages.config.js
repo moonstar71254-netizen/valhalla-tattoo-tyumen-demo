@@ -8,6 +8,8 @@ const IMPORT_MAP = {
     'react-dom/client': 'https://esm.sh/react-dom@18.3.1/client',
     'react/jsx-runtime': 'https://esm.sh/react@18.3.1/jsx-runtime',
     three: 'https://esm.sh/three@0.169.0',
+    'three/examples/jsm/postprocessing/SMAAPass.js':
+      'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/SMAAPass.js?external=three',
     '@react-three/fiber': 'https://esm.sh/@react-three/fiber@8.17.10?external=react,react-dom,three',
     '@react-three/drei':
       'https://esm.sh/@react-three/drei@9.114.3?external=react,react-dom,three,@react-three/fiber',
@@ -47,6 +49,7 @@ export default defineConfig({
         'react-dom/client',
         'react/jsx-runtime',
         'three',
+        'three/examples/jsm/postprocessing/SMAAPass.js',
         '@react-three/fiber',
         '@react-three/drei',
         'gsap',

@@ -40,7 +40,38 @@ const DEFAULT_CONFIG = {
   services: {
     kicker: '03 / Услуги и прайс',
     titleLines: ['Направления', 'работы'],
-    items: [],
+    items: [
+      {
+        name: 'Художественная татуировка',
+        price: 'от 4 000 ₽',
+        desc: 'Авторские эскизы и графика с проработкой под анатомию. Итоговая цена зависит от размера и детализации.',
+      },
+      {
+        name: 'Крупные проекты и рукава',
+        price: '8-часовые сеансы',
+        desc: 'Совладельцы Марс и Ирина ведут масштабные работы вдумчиво. На длинном сеансе угощают кофе и заказывают пиццу.',
+      },
+      {
+        name: 'Перекрытие шрамов и старых тату',
+        price: 'Индивидуально',
+        desc: 'Подбираем плотный эскиз и палитру так, чтобы полностью скрыть старый контур или рельеф кожи.',
+      },
+      {
+        name: 'Лазерное удаление',
+        price: 'По запросу',
+        desc: 'Поэтапное осветление старых татуировок перед перекрытием или до чистой кожи по индивидуальному плану.',
+      },
+      {
+        name: 'Пирсинг',
+        price: 'По записи',
+        desc: 'Стерильный кабинет и подбор базовых украшений. Работаем по предварительной записи с 15:00.',
+      },
+      {
+        name: 'Консультация мастера',
+        price: 'Бесплатно',
+        desc: 'Разбираем идею, прикидываем расположение, количество сеансов и точную стоимость до записи.',
+      },
+    ],
   },
   certificates: {
     kicker: '04 / Сертификаты и запись',
@@ -117,106 +148,20 @@ function getTransitionMode(prev, target) {
   return 'flyZ';
 }
 
-const tiltStateMap = new WeakMap();
-
-function getTiltState(el) {
-  let state = tiltStateMap.get(el);
-  if (!state) {
-    state = {
-      curRx: 0,
-      curRy: 0,
-      curGx: 50,
-      curGy: 50,
-      targetRx: 0,
-      targetRy: 0,
-      targetGx: 50,
-      targetGy: 50,
-      active: false,
-      baseRect: null,
-      rafId: null,
-    };
-    tiltStateMap.set(el, state);
-  }
-  return state;
-}
-
-function stepSurfaceTilt(el) {
-  const state = tiltStateMap.get(el);
-  if (!state) return;
-  const lerp = 0.16;
-  state.curRx += (state.targetRx - state.curRx) * lerp;
-  state.curRy += (state.targetRy - state.curRy) * lerp;
-  state.curGx += (state.targetGx - state.curGx) * lerp;
-  state.curGy += (state.targetGy - state.curGy) * lerp;
-
-  el.style.setProperty('--rx', `${state.curRx.toFixed(2)}deg`);
-  el.style.setProperty('--ry', `${state.curRy.toFixed(2)}deg`);
-  el.style.setProperty('--gx', `${state.curGx.toFixed(1)}%`);
-  el.style.setProperty('--gy', `${state.curGy.toFixed(1)}%`);
-
-  const done =
-    Math.abs(state.targetRx - state.curRx) < 0.01 &&
-    Math.abs(state.targetRy - state.curRy) < 0.01 &&
-    Math.abs(state.targetGx - state.curGx) < 0.05 &&
-    Math.abs(state.targetGy - state.curGy) < 0.05;
-
-  if (done) {
-    state.curRx = state.targetRx;
-    state.curRy = state.targetRy;
-    state.curGx = state.targetGx;
-    state.curGy = state.targetGy;
-    el.style.setProperty('--rx', `${state.curRx.toFixed(2)}deg`);
-    el.style.setProperty('--ry', `${state.curRy.toFixed(2)}deg`);
-    el.style.setProperty('--gx', `${state.curGx.toFixed(1)}%`);
-    el.style.setProperty('--gy', `${state.curGy.toFixed(1)}%`);
-    state.rafId = null;
-    if (!state.active) {
-      el.classList.remove('is-tilting');
-    }
-    return;
-  }
-
-  state.rafId = requestAnimationFrame(() => stepSurfaceTilt(el));
-}
-
-function handleTiltMove(e, maxDeg = 2.5) {
+function handleRowGlowMove(e) {
   const el = e.currentTarget;
-  const state = getTiltState(el);
-  if (!state.active) {
-    state.baseRect = el.getBoundingClientRect();
-    state.active = true;
-    el.classList.add('is-tilting');
-  }
-  const rect = state.baseRect || el.getBoundingClientRect();
+  const rect = el.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
-
   const px = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
   const py = Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height));
-  const clampedMax = Math.min(3, Math.max(1, maxDeg));
-
-  state.targetRx = (0.5 - py) * clampedMax * 2;
-  state.targetRy = (px - 0.5) * clampedMax * 2;
-  state.targetGx = px * 100;
-  state.targetGy = py * 100;
-
-  if (!state.rafId) {
-    state.rafId = requestAnimationFrame(() => stepSurfaceTilt(el));
-  }
+  el.style.setProperty('--gx', `${(px * 100).toFixed(1)}%`);
+  el.style.setProperty('--gy', `${(py * 100).toFixed(1)}%`);
 }
 
-function handleTiltLeave(e) {
+function handleRowGlowLeave(e) {
   const el = e.currentTarget;
-  const state = getTiltState(el);
-  state.active = false;
-  state.baseRect = null;
-  state.targetRx = 0;
-  state.targetRy = 0;
-  state.targetGx = 50;
-  state.targetGy = 50;
-
-  if (!state.rafId) {
-    state.rafId = requestAnimationFrame(() => stepSurfaceTilt(el));
-  }
+  el.style.setProperty('--gx', '50%');
+  el.style.setProperty('--gy', '50%');
 }
 
 export default function App() {
@@ -224,6 +169,16 @@ export default function App() {
   const [activeIndex, setActiveIndex] = useState(0);
   const tiers = config.certificates.tiers || [1500, 5000, 10000, 25000, 50000, 100000];
   const [selectedTier, setSelectedTier] = useState(tiers[2] || 10000);
+  const [selectedServiceIndex, setSelectedServiceIndex] = useState(0);
+
+  const serviceItems = config.services.items?.length
+    ? config.services.items
+    : DEFAULT_CONFIG.services.items;
+  const safeServiceIndex =
+    selectedServiceIndex >= 0 && selectedServiceIndex < serviceItems.length
+      ? selectedServiceIndex
+      : 0;
+  const selectedService = serviceItems[safeServiceIndex] || DEFAULT_CONFIG.services.items[0];
 
   const activeIndexRef = useRef(0);
   const isTransitioningRef = useRef(false);
@@ -231,7 +186,8 @@ export default function App() {
   const sceneStateRef = useRef(createInitialSceneState());
   const pointerRef = useRef({ x: 0, y: 0 });
   const tlRef = useRef(null);
-  const transitionTimerRef = useRef(null);
+  const unlockTimerRef = useRef(null);
+  const cleanupTimerRef = useRef(null);
   const certCardRef = useRef(null);
   const certTiltRef = useRef({
     curRx: 0,
@@ -259,8 +215,7 @@ export default function App() {
     st.curGx += (st.targetGx - st.curGx) * lerp;
     st.curGy += (st.targetGy - st.curGy) * lerp;
 
-    card.style.setProperty('--rx', `${st.curRx.toFixed(2)}deg`);
-    card.style.setProperty('--ry', `${st.curRy.toFixed(2)}deg`);
+    card.style.transform = `rotateX(${st.curRx.toFixed(2)}deg) rotateY(${st.curRy.toFixed(2)}deg)`;
     card.style.setProperty('--gx', `${st.curGx.toFixed(1)}%`);
     card.style.setProperty('--gy', `${st.curGy.toFixed(1)}%`);
 
@@ -275,10 +230,13 @@ export default function App() {
       st.curRy = st.targetRy;
       st.curGx = st.targetGx;
       st.curGy = st.targetGy;
-      card.style.setProperty('--rx', `${st.curRx.toFixed(2)}deg`);
-      card.style.setProperty('--ry', `${st.curRy.toFixed(2)}deg`);
       card.style.setProperty('--gx', `${st.curGx.toFixed(1)}%`);
       card.style.setProperty('--gy', `${st.curGy.toFixed(1)}%`);
+      if (st.targetRx === 0 && st.targetRy === 0) {
+        card.style.transform = 'none';
+      } else {
+        card.style.transform = `rotateX(${st.curRx.toFixed(2)}deg) rotateY(${st.curRy.toFixed(2)}deg)`;
+      }
       st.rafId = null;
       return;
     }
@@ -348,29 +306,29 @@ export default function App() {
     const lines = el.querySelectorAll('.draw-line');
     const items = el.querySelectorAll('.stagger-item');
 
-    tl.set(el, { visibility: 'visible', pointerEvents: 'auto', zIndex: 20 }, 0.08);
+    tl.set(el, { visibility: 'visible', pointerEvents: 'auto', zIndex: 20 }, 0.04);
     if (masks.length) {
       tl.fromTo(
         masks,
         { yPercent: 112 },
-        { yPercent: 0, duration: 0.78, stagger: 0.09, ease: 'expo.out' },
-        0.1
+        { yPercent: 0, duration: 0.56, stagger: 0.07, ease: 'expo.out' },
+        0.06
       );
     }
     if (lines.length) {
       tl.fromTo(
         lines,
         { scaleX: 0 },
-        { scaleX: 1, duration: 0.65, stagger: 0.06, ease: 'expo.out' },
-        0.18
+        { scaleX: 1, duration: 0.48, stagger: 0.05, ease: 'expo.out' },
+        0.12
       );
     }
     if (items.length) {
       tl.fromTo(
         items,
-        { z: -60, scale: 0.94, opacity: 0 },
-        { z: 0, scale: 1, opacity: 1, duration: 0.62, stagger: 0.07, ease: 'power3.out' },
-        0.22
+        { z: -48, scale: 0.95, opacity: 0 },
+        { z: 0, scale: 1, opacity: 1, duration: 0.48, stagger: 0.05, ease: 'power3.out' },
+        0.16
       );
     }
   }, []);
@@ -383,10 +341,15 @@ export default function App() {
       if (isTransitioningRef.current && !force) return;
 
       isTransitioningRef.current = true;
-      if (transitionTimerRef.current) {
-        clearTimeout(transitionTimerRef.current);
-        transitionTimerRef.current = null;
+      if (unlockTimerRef.current) {
+        clearTimeout(unlockTimerRef.current);
+        unlockTimerRef.current = null;
       }
+      if (cleanupTimerRef.current) {
+        clearTimeout(cleanupTimerRef.current);
+        cleanupTimerRef.current = null;
+      }
+
       const dir = target > prev ? 1 : -1;
       const mode = getTransitionMode(prev, target);
       const prevEl = sceneRefs.current[prev];
@@ -410,22 +373,29 @@ export default function App() {
 
       const tl = gsap.timeline({
         onComplete: () => {
-          if (transitionTimerRef.current) {
-            clearTimeout(transitionTimerRef.current);
-            transitionTimerRef.current = null;
+          if (cleanupTimerRef.current) {
+            clearTimeout(cleanupTimerRef.current);
+            cleanupTimerRef.current = null;
           }
           if (prevEl) {
             gsap.set(prevEl, { visibility: 'hidden', pointerEvents: 'none', zIndex: 10 });
             resetSceneProps(prevEl);
           }
           if (nextEl) {
+            gsap.set(nextEl, { visibility: 'visible', pointerEvents: 'auto', zIndex: 20 });
             resetSceneProps(nextEl);
           }
           isTransitioningRef.current = false;
         },
       });
       tlRef.current = tl;
-      transitionTimerRef.current = setTimeout(() => {
+
+      unlockTimerRef.current = setTimeout(() => {
+        isTransitioningRef.current = false;
+        unlockTimerRef.current = null;
+      }, 480);
+
+      cleanupTimerRef.current = setTimeout(() => {
         if (prevEl) {
           gsap.set(prevEl, { visibility: 'hidden', pointerEvents: 'none', zIndex: 10 });
           resetSceneProps(prevEl);
@@ -434,11 +404,10 @@ export default function App() {
           gsap.set(nextEl, { visibility: 'visible', pointerEvents: 'auto', zIndex: 20 });
           resetSceneProps(nextEl);
         }
-        isTransitioningRef.current = false;
-        transitionTimerRef.current = null;
-      }, 1350);
+        cleanupTimerRef.current = null;
+      }, 760);
 
-      // 3D World transition (1.15s)
+      // 3D World transition (0.85s expo.out)
       tl.to(
         sceneStateRef.current,
         {
@@ -470,13 +439,13 @@ export default function App() {
           curR: c.r,
           curG: c.g,
           curB: c.b,
-          duration: 1.15,
-          ease: 'expo.inOut',
+          duration: 0.85,
+          ease: 'expo.out',
         },
         0
       );
 
-      // Outgoing scene spatial exit (0.00 -> 0.40s)
+      // Outgoing scene spatial exit (0.00 -> 0.24s, hidden at 0.25s)
       if (prevEl) {
         const prevInner = prevEl.querySelector('.scene-inner');
         const prevLines = prevEl.querySelectorAll('.draw-line');
@@ -484,20 +453,20 @@ export default function App() {
 
         tl.set(prevEl, { pointerEvents: 'none' }, 0);
         if (prevLines.length) {
-          tl.to(prevLines, { scaleX: 0, duration: 0.26, ease: 'power3.in' }, 0);
+          tl.to(prevLines, { scaleX: 0, duration: 0.18, ease: 'power3.in' }, 0);
         }
 
         if (mode === 'flyZ') {
           if (dir > 0) {
             tl.to(
               prevInner,
-              { scale: 1.24, filter: 'blur(8px)', opacity: 0, duration: 0.4, ease: 'power3.in' },
+              { scale: 1.2, filter: 'blur(6px)', opacity: 0, duration: 0.24, ease: 'power3.in' },
               0
             );
           } else {
             tl.to(
               prevInner,
-              { scale: 0.82, rotateX: 12, opacity: 0, duration: 0.4, ease: 'power3.in' },
+              { scale: 0.85, rotateX: 10, opacity: 0, duration: 0.24, ease: 'power3.in' },
               0
             );
           }
@@ -505,53 +474,53 @@ export default function App() {
           tl.to(
             prevItems,
             {
-              x: -140 * dir,
-              rotateY: -18 * dir,
+              x: -110 * dir,
+              rotateY: -14 * dir,
               opacity: 0,
-              duration: 0.38,
-              stagger: 0.02,
+              duration: 0.22,
+              stagger: 0.012,
               ease: 'power3.in',
             },
             0
           );
-          tl.to(prevInner, { opacity: 0, duration: 0.38, ease: 'power3.in' }, 0.02);
+          tl.to(prevInner, { opacity: 0, duration: 0.24, ease: 'power3.in' }, 0);
         } else if (mode === 'counter') {
           tl.to(
             prevItems,
             {
-              x: -85 * dir,
-              y: -22 * dir,
-              rotateY: -10 * dir,
+              x: -75 * dir,
+              y: -18 * dir,
+              rotateY: -8 * dir,
               opacity: 0,
-              duration: 0.36,
-              stagger: 0.02,
+              duration: 0.22,
+              stagger: 0.012,
               ease: 'power3.in',
             },
             0
           );
-          tl.to(prevInner, { opacity: 0, duration: 0.36, ease: 'power3.in' }, 0.02);
+          tl.to(prevInner, { opacity: 0, duration: 0.24, ease: 'power3.in' }, 0);
         } else {
           // pullback
           tl.to(
             prevInner,
             {
-              y: -48 * dir,
-              scale: 0.9,
-              rotateX: 9 * dir,
+              y: -40 * dir,
+              scale: 0.92,
+              rotateX: 8 * dir,
               opacity: 0,
-              duration: 0.38,
+              duration: 0.24,
               ease: 'power3.in',
             },
             0
           );
         }
-        tl.set(prevEl, { visibility: 'hidden', zIndex: 10 }, 0.41);
+        tl.set(prevEl, { visibility: 'hidden', zIndex: 10 }, 0.25);
       }
 
       activeIndexRef.current = target;
       setActiveIndex(target);
 
-      // Incoming scene spatial entry (0.42 -> 1.15s)
+      // Incoming scene spatial entry (0.22 -> 0.70s)
       if (nextEl) {
         const nextInner = nextEl.querySelector('.scene-inner');
         const nextMasks = nextEl.querySelectorAll('.mask-inner');
@@ -561,7 +530,7 @@ export default function App() {
         const counterRows = nextEl.querySelectorAll('.counter-row');
         const certWrap = nextEl.querySelector('.cert-stage-wrap');
 
-        const startAt = 0.42;
+        const startAt = 0.22;
         tl.set(nextEl, { visibility: 'visible', pointerEvents: 'auto', zIndex: 20 }, startAt);
         tl.set(nextInner, { opacity: 1, scale: 1, x: 0, y: 0, rotateX: 0, rotateY: 0, filter: 'blur(0px)' }, startAt);
 
@@ -569,8 +538,8 @@ export default function App() {
           tl.fromTo(
             nextLines,
             { scaleX: 0 },
-            { scaleX: 1, duration: 0.65, stagger: 0.05, ease: 'expo.out' },
-            startAt + 0.08
+            { scaleX: 1, duration: 0.44, stagger: 0.025, ease: 'expo.out' },
+            startAt + 0.04
           );
         }
 
@@ -578,15 +547,15 @@ export default function App() {
           if (dir > 0) {
             tl.fromTo(
               nextInner,
-              { scale: 0.82, rotateX: 12, opacity: 0 },
-              { scale: 1, rotateX: 0, opacity: 1, duration: 0.72, ease: 'expo.out' },
+              { scale: 0.86, rotateX: 10, opacity: 0 },
+              { scale: 1, rotateX: 0, opacity: 1, duration: 0.48, ease: 'expo.out' },
               startAt
             );
           } else {
             tl.fromTo(
               nextInner,
-              { scale: 1.24, filter: 'blur(8px)', opacity: 0 },
-              { scale: 1, filter: 'blur(0px)', opacity: 1, duration: 0.72, ease: 'expo.out' },
+              { scale: 1.18, filter: 'blur(6px)', opacity: 0 },
+              { scale: 1, filter: 'blur(0px)', opacity: 1, duration: 0.48, ease: 'expo.out' },
               startAt
             );
           }
@@ -594,123 +563,121 @@ export default function App() {
             tl.fromTo(
               nextMasks,
               { yPercent: 105 * dir },
-              { yPercent: 0, duration: 0.68, stagger: 0.07, ease: 'expo.out' },
-              startAt + 0.04
+              { yPercent: 0, duration: 0.46, stagger: 0.04, ease: 'expo.out' },
+              startAt + 0.02
             );
           }
           if (nextItems.length) {
             tl.fromTo(
               nextItems,
-              { z: -50 * dir, opacity: 0 },
-              { z: 0, opacity: 1, duration: 0.6, stagger: 0.06, ease: 'power3.out' },
-              startAt + 0.1
+              { z: -40 * dir, opacity: 0 },
+              { z: 0, opacity: 1, duration: 0.42, stagger: 0.035, ease: 'power3.out' },
+              startAt + 0.05
             );
           }
         } else if (mode === 'orbitalX') {
           if (nextMasks.length) {
             tl.fromTo(
               nextMasks,
-              { x: 110 * dir, opacity: 0 },
-              { x: 0, opacity: 1, duration: 0.72, stagger: 0.07, ease: 'expo.out' },
+              { x: 96 * dir, opacity: 0 },
+              { x: 0, opacity: 1, duration: 0.48, stagger: 0.04, ease: 'expo.out' },
               startAt
             );
           }
           if (nextItems.length) {
             tl.fromTo(
               nextItems,
-              { x: 140 * dir, y: -30 * dir, rotateY: 18 * dir, opacity: 0 },
+              { x: 115 * dir, y: -24 * dir, rotateY: 14 * dir, opacity: 0 },
               {
                 x: 0,
                 y: 0,
                 rotateY: 0,
                 opacity: 1,
-                duration: 0.72,
-                stagger: 0.06,
+                duration: 0.46,
+                stagger: 0.035,
                 ease: 'expo.out',
               },
-              startAt + 0.04
+              startAt + 0.03
             );
           }
         } else if (mode === 'counter') {
-          // Counter-motion: head from top-left, price rows from bottom-right with 3D tilt
           if (counterHeads.length) {
             tl.fromTo(
               counterHeads,
-              { x: -90 * dir, y: -30 * dir, opacity: 0 },
-              { x: 0, y: 0, opacity: 1, duration: 0.68, stagger: 0.06, ease: 'expo.out' },
+              { x: -75 * dir, y: -24 * dir, opacity: 0 },
+              { x: 0, y: 0, opacity: 1, duration: 0.46, stagger: 0.035, ease: 'expo.out' },
               startAt
             );
           }
           if (nextMasks.length) {
             tl.fromTo(
               nextMasks,
-              { x: -70 * dir, yPercent: 80 * dir },
-              { x: 0, yPercent: 0, duration: 0.7, stagger: 0.07, ease: 'expo.out' },
+              { x: -60 * dir, yPercent: 75 * dir },
+              { x: 0, yPercent: 0, duration: 0.48, stagger: 0.04, ease: 'expo.out' },
               startAt
             );
           }
           if (counterRows.length) {
             tl.fromTo(
               counterRows,
-              { x: 90 * dir, y: 24 * dir, rotateY: -10 * dir, opacity: 0 },
+              { x: 75 * dir, y: 18 * dir, opacity: 0 },
               {
                 x: 0,
                 y: 0,
-                rotateY: 0,
                 opacity: 1,
-                duration: 0.68,
-                stagger: 0.06,
+                duration: 0.44,
+                stagger: 0.03,
                 ease: 'expo.out',
               },
-              startAt + 0.06
+              startAt + 0.03
             );
           }
           if (nextItems.length) {
             tl.fromTo(
               nextItems,
-              { x: -60 * dir, y: 22 * dir, opacity: 0 },
-              { x: 0, y: 0, opacity: 1, duration: 0.6, stagger: 0.05, ease: 'power3.out' },
-              startAt + 0.14
+              { x: -48 * dir, y: 18 * dir, opacity: 0 },
+              { x: 0, y: 0, opacity: 1, duration: 0.42, stagger: 0.035, ease: 'power3.out' },
+              startAt + 0.08
             );
           }
         } else {
-          // pullback: contacts from bottom-left, 3D cert card unfolds from right rotateY 32deg
+          // pullback: contacts from bottom-left, 3D cert card unfolds from right
           if (nextMasks.length) {
             tl.fromTo(
               nextMasks,
-              { x: -55 * dir, yPercent: 95 * dir },
-              { x: 0, yPercent: 0, duration: 0.72, stagger: 0.07, ease: 'expo.out' },
+              { x: -48 * dir, yPercent: 90 * dir },
+              { x: 0, yPercent: 0, duration: 0.48, stagger: 0.04, ease: 'expo.out' },
               startAt
             );
           }
           if (nextItems.length) {
             tl.fromTo(
               nextItems,
-              { x: -70 * dir, y: 50 * dir, opacity: 0 },
+              { x: -58 * dir, y: 40 * dir, opacity: 0 },
               {
                 x: 0,
                 y: 0,
                 opacity: 1,
-                duration: 0.7,
-                stagger: 0.055,
+                duration: 0.46,
+                stagger: 0.035,
                 ease: 'expo.out',
               },
-              startAt + 0.04
+              startAt + 0.03
             );
           }
           if (certWrap) {
             tl.fromTo(
               certWrap,
-              { rotateY: 32 * dir, scale: 0.86, x: 70 * dir, opacity: 0 },
+              { rotateY: 28 * dir, scale: 0.88, x: 56 * dir, opacity: 0 },
               {
                 rotateY: 0,
                 scale: 1,
                 x: 0,
                 opacity: 1,
-                duration: 0.78,
+                duration: 0.48,
                 ease: 'expo.out',
               },
-              startAt + 0.08
+              startAt + 0.04
             );
           }
         }
@@ -731,9 +698,9 @@ export default function App() {
 
     const introTl = gsap.timeline({
       onComplete: () => {
-        if (transitionTimerRef.current) {
-          clearTimeout(transitionTimerRef.current);
-          transitionTimerRef.current = null;
+        if (cleanupTimerRef.current) {
+          clearTimeout(cleanupTimerRef.current);
+          cleanupTimerRef.current = null;
         }
         resetSceneProps(sceneRefs.current[0]);
         isTransitioningRef.current = false;
@@ -742,17 +709,26 @@ export default function App() {
     isTransitioningRef.current = true;
     animateIntro(sceneRefs.current[0], introTl);
     tlRef.current = introTl;
-    transitionTimerRef.current = setTimeout(() => {
-      resetSceneProps(sceneRefs.current[0]);
+
+    unlockTimerRef.current = setTimeout(() => {
       isTransitioningRef.current = false;
-      transitionTimerRef.current = null;
-    }, 1350);
+      unlockTimerRef.current = null;
+    }, 480);
+
+    cleanupTimerRef.current = setTimeout(() => {
+      resetSceneProps(sceneRefs.current[0]);
+      cleanupTimerRef.current = null;
+    }, 760);
 
     return () => {
       introTl.kill();
-      if (transitionTimerRef.current) {
-        clearTimeout(transitionTimerRef.current);
-        transitionTimerRef.current = null;
+      if (unlockTimerRef.current) {
+        clearTimeout(unlockTimerRef.current);
+        unlockTimerRef.current = null;
+      }
+      if (cleanupTimerRef.current) {
+        clearTimeout(cleanupTimerRef.current);
+        cleanupTimerRef.current = null;
       }
     };
   }, [animateIntro, resetSceneProps]);
@@ -760,7 +736,7 @@ export default function App() {
   useEffect(() => {
     const obs = Observer.create({
       target: window,
-      type: 'wheel,touch,pointer',
+      type: 'wheel,touch',
       wheelSpeed: -1,
       tolerance: 26,
       dragMinimum: 44,
@@ -946,9 +922,9 @@ export default function App() {
                 {config.atmosphere.facts.map((fact) => (
                   <div
                     key={fact.index}
-                    className="fact-row tilt-surface stagger-item"
-                    onPointerMove={(e) => handleTiltMove(e, 2.5)}
-                    onPointerLeave={handleTiltLeave}
+                    className="fact-row stagger-item"
+                    onPointerMove={handleRowGlowMove}
+                    onPointerLeave={handleRowGlowLeave}
                   >
                     <span className="draw-line fact-hairline" aria-hidden="true" />
                     <span className="fact-index">{fact.index}</span>
@@ -990,9 +966,9 @@ export default function App() {
                 {config.approach.facts.map((fact) => (
                   <div
                     key={fact.index}
-                    className="fact-row tilt-surface stagger-item"
-                    onPointerMove={(e) => handleTiltMove(e, 2.5)}
-                    onPointerLeave={handleTiltLeave}
+                    className="fact-row stagger-item"
+                    onPointerMove={handleRowGlowMove}
+                    onPointerLeave={handleRowGlowLeave}
                   >
                     <span className="draw-line fact-hairline" aria-hidden="true" />
                     <span className="fact-index">{fact.index}</span>
@@ -1004,7 +980,7 @@ export default function App() {
           </div>
         </section>
 
-        {/* Scene 3: Services & Price (Counter-motion assembly) */}
+        {/* Scene 3: Services & Price (Counter-motion assembly + interactive service selector) */}
         <section
           ref={(el) => {
             sceneRefs.current[3] = el;
@@ -1028,19 +1004,49 @@ export default function App() {
                 ))}
               </h2>
 
-              <div className="price-list">
-                {config.services.items.map((item) => (
-                  <div
-                    key={item.name}
-                    className="price-row tilt-surface counter-row"
-                    onPointerMove={(e) => handleTiltMove(e, 2.5)}
-                    onPointerLeave={handleTiltLeave}
-                  >
-                    <span className="price-name">{item.name}</span>
-                    <span className="price-value">{item.price}</span>
-                    <span className="draw-line price-hairline" aria-hidden="true" />
-                  </div>
-                ))}
+              <div className="price-list" role="list">
+                {serviceItems.map((item, idx) => {
+                  const isSelected = safeServiceIndex === idx;
+                  const numLabel = String(idx + 1).padStart(2, '0');
+                  return (
+                    <div
+                      key={item.name}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={isSelected}
+                      className={`price-row counter-row ${isSelected ? 'is-selected' : ''}`}
+                      onClick={() => setSelectedServiceIndex(idx)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedServiceIndex(idx);
+                        }
+                      }}
+                      onPointerEnter={(e) => {
+                        if (e.pointerType === 'mouse') {
+                          setSelectedServiceIndex(idx);
+                        }
+                      }}
+                      onPointerMove={handleRowGlowMove}
+                      onPointerLeave={handleRowGlowLeave}
+                    >
+                      <span className="price-index">{numLabel}</span>
+                      <span className="price-name">{item.name}</span>
+                      <span className="price-value">{item.price}</span>
+                      <span className="draw-line price-hairline" aria-hidden="true" />
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="service-detail-bar stagger-item" aria-live="polite">
+                <div className="service-detail-head">
+                  <span className="service-detail-index">
+                    {String(safeServiceIndex + 1).padStart(2, '0')}
+                  </span>
+                  <span className="service-detail-title">{selectedService.name}</span>
+                </div>
+                <p className="service-detail-desc">{selectedService.desc}</p>
               </div>
 
               <div className="cta-row stagger-item">
@@ -1050,7 +1056,7 @@ export default function App() {
                   rel="noopener noreferrer"
                   className="btn-primary"
                 >
-                  Рассчитать эскиз в Telegram
+                  Обсудить: {selectedService.name}
                 </a>
               </div>
             </div>
