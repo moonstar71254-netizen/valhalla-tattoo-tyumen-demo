@@ -25,8 +25,8 @@
 }
 
 [data-mood='services'] {
-  --accent: #b83b2a;
-  --border: rgba(184, 59, 42, 0.38);
+  --accent: #d44d3a;
+  --border: rgba(212, 77, 58, 0.42);
 }
 
 [data-mood='contacts'] {
@@ -259,6 +259,10 @@ button {
   padding-top: clamp(18px, 6vh, 64px);
 }
 
+.hero-layout .editorial-column {
+  max-width: min(920px, 100%);
+}
+
 .editorial-column {
   max-width: 620px;
 }
@@ -301,7 +305,7 @@ button {
 .display-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(3.6rem, 9.2vw, 8.2rem);
+  font-size: clamp(3.2rem, 7.2vw, 6.8rem);
   font-weight: 500;
   line-height: 0.9;
   letter-spacing: 0.03em;
@@ -502,6 +506,7 @@ button {
   font-weight: 600;
   color: var(--accent);
   white-space: nowrap;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.92);
   transition: color 600ms var(--ease-out);
 }
 
@@ -638,7 +643,7 @@ button {
   }
 
   .scene-layer {
-    padding: 64px 28px 24px 18px;
+    padding: 64px 40px 24px 18px;
   }
 
   .hero-layout {
