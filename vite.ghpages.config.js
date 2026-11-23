@@ -24,7 +24,11 @@ function injectImportMapPlugin() {
         .split('\n')
         .map((line) => `      ${line}`)
         .join('\n')}\n    </script>\n`;
-      return html.replace('    <script src="./site-config.js"></script>', `${importMapTag}    <script src="./site-config.js"></script>`);
+      const faviconTag = `    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23050505'/%3E%3Cpolygon points='16,5 27,16 16,27 5,16' fill='%23c8a86b'/%3E%3C/svg%3E" />\n`;
+      let out = html.includes('rel="icon"')
+        ? html
+        : html.replace('    <meta name="theme-color" content="#050505" />', `    <meta name="theme-color" content="#050505" />\n${faviconTag}`);
+      return out.replace('    <script src="./site-config.js"></script>', `${importMapTag}    <script src="./site-config.js"></script>`);
     },
   };
 }

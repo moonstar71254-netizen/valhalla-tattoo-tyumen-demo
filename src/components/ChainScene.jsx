@@ -57,16 +57,16 @@ export const SCENE_CAMERA_PRESETS = [
     cursorLight: '#E8BE82',
   },
   {
-    cam: [2.1, -2.6, 5.8],
-    look: [0.5, -0.1, 0.6],
+    cam: [-2.1, -1.75, 7.6],
+    look: [-1.55, -0.1, 0.4],
     yShift: -5.0,
-    haloPos: [1.25, 0.65, -2.2],
-    haloScale: 0.84,
+    haloPos: [2.45, 0.55, -2.2],
+    haloScale: 0.82,
     haloRotY: 1.92,
     key: '#C94432',
-    rim: '#FF7D6B',
+    rim: '#FF8A78',
     fill: '#8A2116',
-    emissive: '#2E0B07',
+    emissive: '#260906',
     cursorLight: '#E55A44',
   },
   {
@@ -84,9 +84,7 @@ export const SCENE_CAMERA_PRESETS = [
   },
 ];
 
-// 5 spatial formations for the 8 sculpted forged teardrops/spindles
 const DROP_FORMATIONS = [
-  // Scene 0: Hero — diagonal depth frame weaving around central torus-knot
   [
     [3.2, 2.2, 2.4, 0.96],
     [-1.4, 2.4, -1.6, 0.82],
@@ -97,7 +95,6 @@ const DROP_FORMATIONS = [
     [-2.8, 1.4, -3.8, 0.78],
     [0.8, -3.0, -1.3, 0.92],
   ],
-  // Scene 1: Atmosphere — radial expansion as camera flies through the medallion
   [
     [4.6, 2.9, 0.7, 1.04],
     [-2.4, 3.1, -2.5, 0.86],
@@ -108,7 +105,6 @@ const DROP_FORMATIONS = [
     [-3.5, 1.1, -4.5, 0.78],
     [2.5, -3.5, -2.4, 0.94],
   ],
-  // Scene 2: Approach — 3D orbital constellation around the diagonal chain
   [
     [2.6, 2.1, 2.3, 1.0],
     [-0.4, 1.7, 3.0, 0.84],
@@ -119,18 +115,16 @@ const DROP_FORMATIONS = [
     [1.2, 2.5, -2.3, 0.76],
     [1.4, -2.5, 2.1, 0.9],
   ],
-  // Scene 3: Services — layered 3D sculptural depth lattice across X/Y/Z
   [
-    [2.3, 2.0, 1.8, 1.02],
-    [3.9, 0.6, 1.5, 0.92],
-    [2.4, -0.9, 1.9, 1.06],
-    [4.0, -2.2, 1.4, 0.88],
-    [0.6, 1.6, -0.9, 0.8],
-    [2.7, 0.1, -1.1, 0.86],
-    [0.8, -1.6, -1.0, 0.82],
-    [3.2, 1.3, -3.0, 0.74],
+    [2.6, 2.1, 1.6, 0.98],
+    [4.2, 0.7, 1.4, 0.92],
+    [2.7, -0.9, 1.8, 1.02],
+    [4.3, -2.1, 1.3, 0.88],
+    [1.8, 1.7, -1.2, 0.8],
+    [3.3, 0.1, -1.3, 0.86],
+    [2.1, -1.7, -1.2, 0.82],
+    [3.8, 1.4, -3.0, 0.76],
   ],
-  // Scene 4: Contacts — balanced framing leaving right side clean for 3D certificate card
   [
     [-3.5, 2.8, -2.2, 0.9],
     [0.2, 3.4, -3.6, 0.8],
@@ -143,7 +137,6 @@ const DROP_FORMATIONS = [
   ],
 ];
 
-// 5 spatial formations for the 6 sculpted beveled orbital discs
 const DISC_FORMATIONS = [
   [
     [-2.2, -1.4, -2.8, 0.95],
@@ -170,12 +163,12 @@ const DISC_FORMATIONS = [
     [1.6, -0.4, -2.6, 1.05],
   ],
   [
-    [1.4, 1.9, 0.4, 0.98],
-    [3.4, -0.4, 0.9, 0.94],
-    [1.7, -1.9, 0.6, 0.9],
-    [-0.6, 0.9, -1.8, 0.85],
-    [2.9, 1.5, -2.2, 0.82],
-    [-0.4, -1.5, -2.1, 0.88],
+    [2.4, 1.9, 0.4, 0.96],
+    [4.1, -0.4, 0.9, 0.92],
+    [2.6, -1.9, 0.6, 0.88],
+    [1.4, 1.1, -2.0, 0.84],
+    [3.6, 1.5, -2.2, 0.82],
+    [1.6, -1.5, -2.2, 0.86],
   ],
   [
     [-3.2, 1.8, -2.9, 0.94],
@@ -212,21 +205,19 @@ function createForgedMetalMaps() {
 
   const rand = mulberry32(72091);
 
-  // Neutral metallic bases
   bCtx.fillStyle = '#808080';
   bCtx.fillRect(0, 0, size, size);
 
-  rCtx.fillStyle = '#5c5c5c';
+  rCtx.fillStyle = '#7c7c7c';
   rCtx.fillRect(0, 0, size, size);
 
-  // 1. Subtle hammered forging dimples (seamless wrap via 3x3 offsets)
   for (let i = 0; i < 150; i++) {
     const cx = rand() * size;
     const cy = rand() * size;
     const radius = 10 + rand() * 28;
     const isDent = rand() > 0.35;
-    const bumpShade = isDent ? 92 + Math.floor(rand() * 26) : 138 + Math.floor(rand() * 24);
-    const roughShade = isDent ? 118 + Math.floor(rand() * 38) : 64 + Math.floor(rand() * 24);
+    const bumpShade = isDent ? 74 + Math.floor(rand() * 28) : 154 + Math.floor(rand() * 28);
+    const roughShade = isDent ? 168 + Math.floor(rand() * 48) : 44 + Math.floor(rand() * 26);
 
     for (let ox = -1; ox <= 1; ox++) {
       for (let oy = -1; oy <= 1; oy++) {
@@ -235,8 +226,8 @@ function createForgedMetalMaps() {
         if (px < -radius || px > size + radius || py < -radius || py > size + radius) continue;
 
         const bGrad = bCtx.createRadialGradient(px, py, 0, px, py, radius);
-        bGrad.addColorStop(0, `rgba(${bumpShade},${bumpShade},${bumpShade},0.28)`);
-        bGrad.addColorStop(0.7, `rgba(${bumpShade},${bumpShade},${bumpShade},0.08)`);
+        bGrad.addColorStop(0, `rgba(${bumpShade},${bumpShade},${bumpShade},0.42)`);
+        bGrad.addColorStop(0.7, `rgba(${bumpShade},${bumpShade},${bumpShade},0.14)`);
         bGrad.addColorStop(1, 'rgba(128,128,128,0)');
         bCtx.fillStyle = bGrad;
         bCtx.beginPath();
@@ -244,8 +235,8 @@ function createForgedMetalMaps() {
         bCtx.fill();
 
         const rGrad = rCtx.createRadialGradient(px, py, 0, px, py, radius);
-        rGrad.addColorStop(0, `rgba(${roughShade},${roughShade},${roughShade},0.32)`);
-        rGrad.addColorStop(1, 'rgba(92,92,92,0)');
+        rGrad.addColorStop(0, `rgba(${roughShade},${roughShade},${roughShade},0.48)`);
+        rGrad.addColorStop(1, 'rgba(124,124,124,0)');
         rCtx.fillStyle = rGrad;
         rCtx.beginPath();
         rCtx.arc(px, py, radius, 0, Math.PI * 2);
@@ -254,7 +245,6 @@ function createForgedMetalMaps() {
     }
   }
 
-  // 2. Brushed steel anisotropic micro-grain
   for (let i = 0; i < 1400; i++) {
     const y = rand() * size;
     const x = rand() * size;
@@ -262,7 +252,7 @@ function createForgedMetalMaps() {
     const dy = (rand() - 0.5) * 4.5;
     const bright = rand() > 0.5;
 
-    bCtx.strokeStyle = bright ? 'rgba(205,205,205,0.14)' : 'rgba(55,55,55,0.16)';
+    bCtx.strokeStyle = bright ? 'rgba(220,220,220,0.22)' : 'rgba(38,38,38,0.24)';
     bCtx.lineWidth = 0.5 + rand() * 0.9;
     bCtx.beginPath();
     bCtx.moveTo(x, y);
@@ -275,7 +265,7 @@ function createForgedMetalMaps() {
       bCtx.stroke();
     }
 
-    rCtx.strokeStyle = bright ? 'rgba(175,175,175,0.18)' : 'rgba(38,38,38,0.22)';
+    rCtx.strokeStyle = bright ? 'rgba(218,218,218,0.28)' : 'rgba(30,30,30,0.32)';
     rCtx.lineWidth = 0.6 + rand() * 1.1;
     rCtx.beginPath();
     rCtx.moveTo(x, y);
@@ -289,7 +279,6 @@ function createForgedMetalMaps() {
     }
   }
 
-  // 3. Fine micro-scratches that fracture specular highlights realistically
   for (let i = 0; i < 240; i++) {
     const x = rand() * size;
     const y = rand() * size;
@@ -298,14 +287,14 @@ function createForgedMetalMaps() {
     const x2 = x + Math.cos(angle) * len;
     const y2 = y + Math.sin(angle) * len;
 
-    bCtx.strokeStyle = rand() > 0.45 ? 'rgba(32,32,32,0.3)' : 'rgba(228,228,228,0.24)';
-    bCtx.lineWidth = 0.45 + rand() * 0.65;
+    bCtx.strokeStyle = rand() > 0.45 ? 'rgba(24,24,24,0.44)' : 'rgba(238,238,238,0.34)';
+    bCtx.lineWidth = 0.55 + rand() * 0.75;
     bCtx.beginPath();
     bCtx.moveTo(x, y);
     bCtx.lineTo(x2, y2);
     bCtx.stroke();
 
-    rCtx.strokeStyle = 'rgba(215,215,215,0.26)';
+    rCtx.strokeStyle = 'rgba(235,235,235,0.4)';
     rCtx.lineWidth = 0.5 + rand() * 0.7;
     rCtx.beginPath();
     rCtx.moveTo(x, y);
@@ -351,7 +340,6 @@ function applyForgedWaveDeformation(geometry, amplitude, freqA, freqB) {
 }
 
 function createBeveledMedallionGeometry() {
-  // Multi-point beveled ring cross-section rotated 360° via LatheGeometry (64 segments)
   const profile = [
     new THREE.Vector2(2.02, -0.045),
     new THREE.Vector2(2.08, -0.095),
@@ -374,7 +362,6 @@ function createBeveledMedallionGeometry() {
 }
 
 function createHaloBeadGeometry() {
-  // Smooth beveled teardrop rivet via LatheGeometry (36 segments)
   const profile = [
     new THREE.Vector2(0.002, -0.15),
     new THREE.Vector2(0.036, -0.11),
@@ -390,27 +377,12 @@ function createHaloBeadGeometry() {
 }
 
 function createSculptedDropGeometry() {
-  // Sleek sculpted metallic spindle/teardrop with beveled equatorial crest (48 segments)
-  const profile = [
-    new THREE.Vector2(0.003, -0.78),
-    new THREE.Vector2(0.045, -0.66),
-    new THREE.Vector2(0.115, -0.46),
-    new THREE.Vector2(0.205, -0.22),
-    new THREE.Vector2(0.258, -0.05),
-    new THREE.Vector2(0.272, 0.02),
-    new THREE.Vector2(0.246, 0.14),
-    new THREE.Vector2(0.185, 0.34),
-    new THREE.Vector2(0.105, 0.54),
-    new THREE.Vector2(0.042, 0.69),
-    new THREE.Vector2(0.003, 0.78),
-  ];
-  const geo = new THREE.LatheGeometry(profile, 48);
+  const geo = new THREE.TorusGeometry(0.38, 0.085, 32, 64);
   geo.computeVertexNormals();
-  return applyForgedWaveDeformation(geo, 0.012, 4.2, 3.4);
+  return applyForgedWaveDeformation(geo, 0.011, 4.4, 3.6);
 }
 
 function createBeveledDiscGeometry() {
-  // Sculpted concave forged disc with chamfered edge via LatheGeometry (64 segments)
   const profile = [
     new THREE.Vector2(0.003, -0.035),
     new THREE.Vector2(0.18, -0.042),
@@ -446,21 +418,38 @@ function createParticleTexture() {
   return tex;
 }
 
+function detectSoftwareRenderer(gl) {
+  try {
+    const ctx = gl.getContext();
+    const debugInfo = ctx.getExtension('WEBGL_debug_renderer_info');
+    const unmasked = debugInfo ? ctx.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : '';
+    const renderer = String(unmasked || ctx.getParameter(ctx.RENDERER) || '');
+    return /swiftshader|llvmpipe|software/i.test(renderer);
+  } catch {
+    return false;
+  }
+}
+
 function BloomPostProcessing() {
   const { gl, scene, camera, size } = useThree();
 
-  const { composer, bloomPass, renderTarget } = useMemo(() => {
+  const { composer, bloomPass, renderTarget, isSoftware } = useMemo(() => {
+    const software = detectSoftwareRenderer(gl);
     const rt = new THREE.WebGLRenderTarget(size.width, size.height, {
       type: THREE.HalfFloatType,
-      samples: gl.capabilities.isWebGL2 ? 4 : 0,
+      samples: !software && gl.capabilities.isWebGL2 ? 2 : 0,
     });
     const comp = new EffectComposer(gl, rt);
     const renderPass = new RenderPass(scene, camera);
+    const bloomScale = software ? 0.5 : 1;
     const bloom = new UnrealBloomPass(
-      new THREE.Vector2(size.width, size.height),
-      0.42, // delicate cinematic highlight bloom
-      0.52, // soft radius
-      0.88 // high luminance threshold (>= 0.85) so only bright metal speculars glow
+      new THREE.Vector2(
+        Math.max(1, Math.floor(size.width * bloomScale)),
+        Math.max(1, Math.floor(size.height * bloomScale))
+      ),
+      0.24,
+      0.36,
+      0.92
     );
     const outputPass = new OutputPass();
 
@@ -468,15 +457,19 @@ function BloomPostProcessing() {
     comp.addPass(bloom);
     comp.addPass(outputPass);
 
-    return { composer: comp, bloomPass: bloom, renderTarget: rt };
+    return { composer: comp, bloomPass: bloom, renderTarget: rt, isSoftware: software };
   }, [gl, scene, camera]);
 
   useEffect(() => {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = isSoftware ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+    const bloomScale = isSoftware ? 0.5 : 1;
     composer.setPixelRatio(dpr);
     composer.setSize(size.width, size.height);
-    bloomPass.resolution.set(size.width, size.height);
-  }, [composer, bloomPass, size.width, size.height]);
+    bloomPass.resolution.set(
+      Math.max(1, Math.floor(size.width * bloomScale)),
+      Math.max(1, Math.floor(size.height * bloomScale))
+    );
+  }, [composer, bloomPass, isSoftware, size.width, size.height]);
 
   useEffect(() => {
     return () => {
@@ -546,7 +539,6 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
       const i3 = i * 3;
       const spreadX = (Math.random() - 0.5) * 24;
       const spreadY = (Math.random() - 0.5) * 16;
-      // 25% close to camera for foreground Z-depth parallax
       const spreadZ =
         i < PARTICLE_COUNT * 0.25 ? 2.4 + Math.random() * 5.0 : -9.5 + Math.random() * 11.9;
 
@@ -581,7 +573,6 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
     };
   }, [geometries, metalMaps, particleData]);
 
-  // Populate static local transforms of the 12 sculpted forged beads around the medallion
   useEffect(() => {
     const beads = haloBeadsRef.current;
     if (!beads) return;
@@ -599,7 +590,6 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
     beads.instanceMatrix.needsUpdate = true;
   }, []);
 
-  // Diagonal spatial chain curve sweeping across the center and foreground/background depth
   const curve = useMemo(() => {
     const xScale = isMobile ? 0.52 : 1.0;
     const points = [
@@ -626,9 +616,9 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
       rx: idx * 0.72,
       ry: idx * 1.08,
       rz: idx * 0.42,
-      sx: 0.78 + (idx % 3) * 0.16,
-      sy: 0.88 + ((idx + 1) % 3) * 0.22,
-      sz: 0.78 + (idx % 2) * 0.18,
+      sx: 0.94 + (idx % 3) * 0.07,
+      sy: 0.94 + (idx % 3) * 0.07,
+      sz: 0.94 + (idx % 3) * 0.07,
     }));
 
     const discStates = DISC_FORMATIONS[0].map(([x, y, z, s], idx) => ({
@@ -666,7 +656,6 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
     const elapsed = state.clock.getElapsedTime();
     const xMul = isMobile ? 0.48 : 1.0;
 
-    // 1. Update Forged 3D Chain (80 links, stable makeBasis, zero flips)
     const chain = chainRef.current;
     if (chain) {
       for (let i = 0; i < LINK_COUNT; i++) {
@@ -696,7 +685,6 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
       chain.instanceMatrix.needsUpdate = true;
     }
 
-    // 2. Update Central Sculptural Torus-Knot + Beveled Medallion Halo
     if (haloGroupRef.current) {
       const hScale = s.haloScale * (isMobile ? 0.68 : 1.0);
       haloGroupRef.current.position.set(
@@ -724,7 +712,6 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
       innerHaloRef.current.rotation.x = Math.sin(elapsed * 0.44) * 0.24;
     }
 
-    // 3. Update 8 Sculpted Orbital Drops (smooth X/Y/Z spatial re-formation per scene)
     const drops = dropsRef.current;
     if (drops) {
       const targetDrops = DROP_FORMATIONS[activeScene] || DROP_FORMATIONS[0];
@@ -756,7 +743,6 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
       drops.instanceMatrix.needsUpdate = true;
     }
 
-    // 4. Update 6 Beveled Orbital Discs
     const discs = discsRef.current;
     if (discs) {
       const targetDiscs = DISC_FORMATIONS[activeScene] || DISC_FORMATIONS[0];
@@ -786,7 +772,6 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
       discs.instanceMatrix.needsUpdate = true;
     }
 
-    // 5. Update 260 3D Atmospheric Metallic Dust & Ember Particles
     if (particlesRef.current) {
       const posAttr = particleData.geo.attributes.position;
       const arr = posAttr.array;
@@ -802,7 +787,6 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
       particlesRef.current.rotation.y = scratch.smoothPtrX * 0.08 + s.chainOffset * 0.6;
     }
 
-    // 6. Camera Parallax + Smooth Pointer Light
     const ptrLerp = 1 - Math.exp(-dt * 5.5);
     scratch.smoothPtrX += (pointerRef.current.x - scratch.smoothPtrX) * ptrLerp;
     scratch.smoothPtrY += (pointerRef.current.y - scratch.smoothPtrY) * ptrLerp;
@@ -833,7 +817,6 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
       cursorLightRef.current.color.setRGB(s.curR, s.curG, s.curB);
     }
 
-    // 7. Scene Lighting & Material Emissive Sync
     if (keyLightRef.current) keyLightRef.current.color.setRGB(s.keyR, s.keyG, s.keyB);
     if (rimLightRef.current) rimLightRef.current.color.setRGB(s.rimR, s.rimG, s.rimB);
     if (fillLightRef.current) fillLightRef.current.color.setRGB(s.fillR, s.fillG, s.fillB);
@@ -848,13 +831,13 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
       <color attach="background" args={['#050505']} />
       <fog attach="fog" args={['#050505', 14, 34]} />
 
-      <ambientLight intensity={0.48} color="#e5ecf5" />
-      <directionalLight ref={keyLightRef} position={[6, 9, 10]} intensity={5.6} color="#E8EEF5" />
-      <directionalLight ref={rimLightRef} position={[-8, 4, 7]} intensity={4.2} color="#FFFFFF" />
+      <ambientLight intensity={0.34} color="#dbe4ef" />
+      <directionalLight ref={keyLightRef} position={[6, 9, 10]} intensity={2.8} color="#E8EEF5" />
+      <directionalLight ref={rimLightRef} position={[-8, 4, 7]} intensity={2.2} color="#FFFFFF" />
       <pointLight
         ref={fillLightRef}
         position={[4, -4, 8]}
-        intensity={30}
+        intensity={14}
         distance={30}
         decay={1.5}
         color="#B6CBE0"
@@ -862,7 +845,7 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
       <pointLight
         ref={cursorLightRef}
         position={[1.5, 1, 5.8]}
-        intensity={44}
+        intensity={20}
         distance={24}
         decay={1.4}
         color="#E8EEF5"
@@ -871,100 +854,98 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
       <Environment resolution={256} frames={1}>
         <Lightformer
           form="rect"
-          intensity={5.4}
-          color="#ffffff"
+          intensity={3.0}
+          color="#e8eef6"
           scale={[16, 5, 1]}
           position={[0, 8, 5]}
           rotation={[Math.PI / 2.4, 0, 0]}
         />
         <Lightformer
           form="rect"
-          intensity={4.6}
-          color="#edf3fa"
+          intensity={2.6}
+          color="#dce5f0"
           scale={[6, 15, 1]}
           position={[9, 1, 6]}
           rotation={[0, -Math.PI / 2.5, 0]}
         />
         <Lightformer
           form="rect"
-          intensity={3.8}
-          color="#dde5f0"
+          intensity={2.2}
+          color="#cfd9e6"
           scale={[6, 15, 1]}
           position={[-9, -1, 5]}
           rotation={[0, Math.PI / 2.5, 0]}
         />
         <Lightformer
           form="ring"
-          intensity={3.2}
-          color="#f7ebd8"
+          intensity={1.9}
+          color="#e5d5bc"
           scale={9}
           position={[2, -6, 6]}
           rotation={[-Math.PI / 3, 0, 0]}
         />
       </Environment>
 
-      {/* Layer 1: High-Poly Forged 3D Chain (80 links, 32x64 torus + micro-scratched steel maps) */}
       <instancedMesh ref={chainRef} args={[geometries.link, null, LINK_COUNT]} frustumCulled={false}>
         <meshPhysicalMaterial
           ref={chainMatRef}
-          color="#8a93a0"
-          metalness={1}
-          roughness={0.34}
+          color="#2c323c"
+          metalness={0.96}
+          roughness={0.38}
           roughnessMap={metalMaps.roughnessMap}
           bumpMap={metalMaps.bumpMap}
-          bumpScale={0.036}
-          envMapIntensity={2.15}
-          clearcoat={0.42}
-          clearcoatRoughness={0.18}
+          bumpScale={0.095}
+          envMapIntensity={1.0}
+          clearcoat={0.22}
+          clearcoatRoughness={0.32}
           emissive="#18202C"
-          emissiveIntensity={0.45}
+          emissiveIntensity={0.22}
         />
       </instancedMesh>
 
-      {/* Layer 2A: Central Sculptural Torus-Knot + Beveled Forged Medallion Halo */}
       <group ref={haloGroupRef} position={[1.05, 0.12, 1.45]}>
         <mesh ref={knotRef} geometry={geometries.torusKnot}>
           <meshPhysicalMaterial
             ref={knotMatRef}
-            color="#96a0ae"
-            metalness={1}
-            roughness={0.3}
+            color="#343b46"
+            metalness={0.96}
+            roughness={0.36}
             roughnessMap={metalMaps.roughnessMap}
             bumpMap={metalMaps.bumpMap}
-            bumpScale={0.042}
-            envMapIntensity={2.35}
-            clearcoat={0.55}
-            clearcoatRoughness={0.14}
+            bumpScale={0.11}
+            envMapIntensity={1.1}
+            clearcoat={0.26}
+            clearcoatRoughness={0.28}
             emissive="#18202C"
-            emissiveIntensity={0.4}
+            emissiveIntensity={0.2}
           />
         </mesh>
 
         <mesh ref={medallionRef} geometry={geometries.medallionHalo}>
           <meshPhysicalMaterial
-            color="#737d8b"
-            metalness={1}
-            roughness={0.36}
+            color="#262c35"
+            metalness={0.96}
+            roughness={0.42}
             roughnessMap={metalMaps.roughnessMap}
             bumpMap={metalMaps.bumpMap}
-            bumpScale={0.045}
-            envMapIntensity={2.1}
-            clearcoat={0.45}
-            clearcoatRoughness={0.16}
+            bumpScale={0.11}
+            envMapIntensity={0.95}
+            clearcoat={0.2}
+            clearcoatRoughness={0.34}
           />
         </mesh>
 
         <mesh ref={innerHaloRef} geometry={geometries.innerHalo}>
           <meshPhysicalMaterial
-            color="#b59d78"
-            metalness={1}
-            roughness={0.28}
+            color="#4a4236"
+            metalness={0.94}
+            roughness={0.35}
             roughnessMap={metalMaps.roughnessMap}
             bumpMap={metalMaps.bumpMap}
-            bumpScale={0.025}
-            envMapIntensity={2.35}
-            clearcoat={0.55}
-            clearcoatRoughness={0.12}
+            bumpScale={0.085}
+            envMapIntensity={1.05}
+            clearcoat={0.24}
+            clearcoatRoughness={0.26}
           />
         </mesh>
 
@@ -974,19 +955,18 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
           frustumCulled={false}
         >
           <meshPhysicalMaterial
-            color="#a7b1bf"
-            metalness={1}
-            roughness={0.26}
+            color="#343b46"
+            metalness={0.96}
+            roughness={0.36}
             roughnessMap={metalMaps.roughnessMap}
             bumpMap={metalMaps.bumpMap}
-            bumpScale={0.024}
-            envMapIntensity={2.4}
-            clearcoat={0.5}
+            bumpScale={0.08}
+            envMapIntensity={1.05}
+            clearcoat={0.22}
           />
         </instancedMesh>
       </group>
 
-      {/* Layer 2B: 8 Sculpted Orbital Drops / Forged Spindles */}
       <instancedMesh
         ref={dropsRef}
         args={[geometries.orbitalDrop, null, ORBITAL_DROP_COUNT]}
@@ -994,21 +974,20 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
       >
         <meshPhysicalMaterial
           ref={dropsMatRef}
-          color="#4c535f"
-          metalness={0.98}
-          roughness={0.32}
+          color="#232830"
+          metalness={0.95}
+          roughness={0.4}
           roughnessMap={metalMaps.roughnessMap}
           bumpMap={metalMaps.bumpMap}
-          bumpScale={0.038}
-          envMapIntensity={2.15}
-          clearcoat={0.62}
-          clearcoatRoughness={0.14}
+          bumpScale={0.1}
+          envMapIntensity={0.92}
+          clearcoat={0.24}
+          clearcoatRoughness={0.3}
           emissive="#18202C"
-          emissiveIntensity={0.4}
+          emissiveIntensity={0.2}
         />
       </instancedMesh>
 
-      {/* Layer 2C: 6 Beveled Concave Orbital Discs */}
       <instancedMesh
         ref={discsRef}
         args={[geometries.orbitalDisc, null, ORBITAL_DISC_COUNT]}
@@ -1016,21 +995,20 @@ function ValhallaWorld({ sceneStateRef, pointerRef, activeScene }) {
       >
         <meshPhysicalMaterial
           ref={discsMatRef}
-          color="#676f7c"
-          metalness={1}
-          roughness={0.34}
+          color="#2a303a"
+          metalness={0.96}
+          roughness={0.42}
           roughnessMap={metalMaps.roughnessMap}
           bumpMap={metalMaps.bumpMap}
-          bumpScale={0.034}
-          envMapIntensity={2.2}
-          clearcoat={0.5}
-          clearcoatRoughness={0.15}
+          bumpScale={0.095}
+          envMapIntensity={0.95}
+          clearcoat={0.22}
+          clearcoatRoughness={0.32}
           emissive="#18202C"
-          emissiveIntensity={0.35}
+          emissiveIntensity={0.18}
         />
       </instancedMesh>
 
-      {/* Layer 3: 260 3D Metallic Dust & Bronze-Ruby Ember Particles */}
       <points ref={particlesRef} geometry={particleData.geo} frustumCulled={false}>
         <pointsMaterial
           size={0.15}
@@ -1095,7 +1073,7 @@ export default function ChainScene({ sceneStateRef, pointerRef, activeScene }) {
             alpha: false,
             powerPreference: 'high-performance',
             toneMapping: THREE.ACESFilmicToneMapping,
-            toneMappingExposure: 1.18,
+            toneMappingExposure: 1.05,
           }}
           onCreated={({ gl }) => {
             gl.domElement.addEventListener('webglcontextlost', (e) => {

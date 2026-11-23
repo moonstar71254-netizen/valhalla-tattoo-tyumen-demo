@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import ChainScene, { SCENE_CAMERA_PRESETS } from './components/ChainScene.jsx';
 
 gsap.registerPlugin(Observer);
+gsap.ticker.lagSmoothing(0);
 
 const SCENES = [
   { id: 'hero', label: 'Вход', mood: 'hero' },
@@ -149,6 +150,7 @@ export default function App() {
   const sceneStateRef = useRef(createInitialSceneState());
   const pointerRef = useRef({ x: 0, y: 0 });
   const tlRef = useRef(null);
+  const transitionTimerRef = useRef(null);
 
   const tierIntensity = useMemo(() => {
     const idx = Math.max(0, tiers.indexOf(selectedTier));
@@ -207,6 +209,10 @@ export default function App() {
       if (target === prev || isTransitioningRef.current) return;
 
       isTransitioningRef.current = true;
+      if (transitionTimerRef.current) {
+        clearTimeout(transitionTimerRef.current);
+        transitionTimerRef.current = null;
+      }
       const dir = target > prev ? 1 : -1;
       const mode = getTransitionMode(prev, target);
       const prevEl = sceneRefs.current[prev];
@@ -223,6 +229,10 @@ export default function App() {
 
       const tl = gsap.timeline({
         onComplete: () => {
+          if (transitionTimerRef.current) {
+            clearTimeout(transitionTimerRef.current);
+            transitionTimerRef.current = null;
+          }
           if (prevEl) {
             gsap.set(prevEl, { visibility: 'hidden', pointerEvents: 'none', zIndex: 10 });
             resetSceneProps(prevEl);
@@ -234,6 +244,18 @@ export default function App() {
         },
       });
       tlRef.current = tl;
+      transitionTimerRef.current = setTimeout(() => {
+        if (prevEl) {
+          gsap.set(prevEl, { visibility: 'hidden', pointerEvents: 'none', zIndex: 10 });
+          resetSceneProps(prevEl);
+        }
+        if (nextEl) {
+          gsap.set(nextEl, { visibility: 'visible', pointerEvents: 'auto', zIndex: 20 });
+          resetSceneProps(nextEl);
+        }
+        isTransitioningRef.current = false;
+        transitionTimerRef.current = null;
+      }, 1350);
 
       tl.to(
         sceneStateRef.current,
@@ -522,6 +544,10 @@ export default function App() {
 
     const introTl = gsap.timeline({
       onComplete: () => {
+        if (transitionTimerRef.current) {
+          clearTimeout(transitionTimerRef.current);
+          transitionTimerRef.current = null;
+        }
         resetSceneProps(sceneRefs.current[0]);
         isTransitioningRef.current = false;
       },
@@ -529,9 +555,18 @@ export default function App() {
     isTransitioningRef.current = true;
     animateIntro(sceneRefs.current[0], introTl);
     tlRef.current = introTl;
+    transitionTimerRef.current = setTimeout(() => {
+      resetSceneProps(sceneRefs.current[0]);
+      isTransitioningRef.current = false;
+      transitionTimerRef.current = null;
+    }, 1350);
 
     return () => {
       introTl.kill();
+      if (transitionTimerRef.current) {
+        clearTimeout(transitionTimerRef.current);
+        transitionTimerRef.current = null;
+      }
     };
   }, [animateIntro, resetSceneProps]);
 
