@@ -52,18 +52,18 @@ function ForgedChain({ scrollRef, mood }) {
   }, [geometry]);
 
   const curve = useMemo(() => {
-    const xScale = isMobile ? 0.55 : 1.0;
+    const xScale = isMobile ? 0.52 : 1.0;
     const points = [
-      new THREE.Vector3(3.8 * xScale, 26, -1.8),
-      new THREE.Vector3(4.2 * xScale, 18, 0.6),
-      new THREE.Vector3(3.4 * xScale, 10, 1.4),
-      new THREE.Vector3(2.9 * xScale, 3.2, 1.8),
-      new THREE.Vector3(2.5 * xScale, -2.5, 1.5),
-      new THREE.Vector3(-2.6 * xScale, -9.5, 0.9),
-      new THREE.Vector3(-3.4 * xScale, -16.5, 1.6),
-      new THREE.Vector3(2.8 * xScale, -23.5, 1.2),
-      new THREE.Vector3(3.6 * xScale, -31, 0.4),
-      new THREE.Vector3(-1.8 * xScale, -39, -1.4),
+      new THREE.Vector3(5.6 * xScale, 26, -1.6),
+      new THREE.Vector3(5.2 * xScale, 18, 0.8),
+      new THREE.Vector3(4.5 * xScale, 10, 1.5),
+      new THREE.Vector3(4.1 * xScale, 3.2, 1.8),
+      new THREE.Vector3(3.6 * xScale, -2.5, 1.5),
+      new THREE.Vector3(-2.4 * xScale, -9.5, 0.9),
+      new THREE.Vector3(-3.2 * xScale, -16.5, 1.6),
+      new THREE.Vector3(3.4 * xScale, -23.5, 1.2),
+      new THREE.Vector3(4.0 * xScale, -31, 0.4),
+      new THREE.Vector3(-1.4 * xScale, -39, -1.4),
     ];
     return new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.5);
   }, [isMobile]);
@@ -121,14 +121,14 @@ function ForgedChain({ scrollRef, mood }) {
 
     mesh.instanceMatrix.needsUpdate = true;
 
-    const camX = (isMobile ? 0.35 : 0.8) + Math.sin(scratch.smoothScroll * Math.PI * 1.4) * (isMobile ? 0.6 : 1.35);
+    const camX = (isMobile ? 0.4 : 1.0) + Math.sin(scratch.smoothScroll * Math.PI * 1.4) * (isMobile ? 0.55 : 1.25);
     const camY = 1.4 - scratch.smoothScroll * 2.8;
-    const camZ = isMobile ? 13.2 : 10.6;
+    const camZ = isMobile ? 13.4 : 10.8;
 
     camera.position.x += (camX - camera.position.x) * Math.min(1, dt * 4);
     camera.position.y += (camY - camera.position.y) * Math.min(1, dt * 4);
     camera.position.z += (camZ - camera.position.z) * Math.min(1, dt * 4);
-    camera.lookAt(isMobile ? 0.4 : 1.1, camY - 0.6, 0);
+    camera.lookAt(isMobile ? 0.4 : 1.3, camY - 0.6, 0);
 
     const palette = MOOD_LIGHTS[mood] || MOOD_LIGHTS.hero;
     const colorLerp = 1 - Math.exp(-dt * 5.2);
@@ -270,7 +270,7 @@ export default function ChainScene({ scrollRef, mood }) {
       <SceneErrorBoundary>
         <Canvas
           dpr={[1, 2]}
-          camera={{ position: [0.8, 1.4, 10.6], fov: 42, near: 0.1, far: 80 }}
+          camera={{ position: [1.0, 1.4, 10.8], fov: 42, near: 0.1, far: 80 }}
           gl={{
             antialias: true,
             alpha: false,
