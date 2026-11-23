@@ -4,36 +4,77 @@ import { Environment, Lightformer } from '@react-three/drei';
 import * as THREE from 'three';
 
 const LINK_COUNT = 80;
-const UP_AXIS = new THREE.Vector3(0, 1, 0);
+const Z_REF = new THREE.Vector3(0, 0, 1);
+const X_FALLBACK = new THREE.Vector3(1, 0, 0);
 
-const MOOD_LIGHTS = {
-  hero: {
-    key: '#E8EEF5',
-    rim: '#FFFFFF',
-    fill: '#9FB6CE',
-    emissive: '#161C24',
+const KEYFRAMES = [
+  {
+    p: 0.0,
+    camPos: [1.1, 1.8, 10.6],
+    lookAt: [1.4, 0.8, 0.0],
+    key: new THREE.Color('#E8EEF5'),
+    rim: new THREE.Color('#FFFFFF'),
+    fill: new THREE.Color('#9FB6CE'),
+    emissive: new THREE.Color('#161C24'),
   },
-  space: {
-    key: '#C49B66',
-    rim: '#F2CFA0',
-    fill: '#6E4C28',
-    emissive: '#22170C',
+  {
+    p: 0.37,
+    camPos: [-1.4, 0.6, 8.6],
+    lookAt: [0.4, -0.3, 0.4],
+    key: new THREE.Color('#C49B66'),
+    rim: new THREE.Color('#F5D3A4'),
+    fill: new THREE.Color('#78532A'),
+    emissive: new THREE.Color('#24170B'),
   },
-  services: {
-    key: '#B83B2A',
-    rim: '#F06A56',
-    fill: '#6B1C14',
-    emissive: '#260B08',
+  {
+    p: 0.65,
+    camPos: [2.2, -0.4, 6.8],
+    lookAt: [0.9, -0.5, 1.1],
+    key: new THREE.Color('#B83B2A'),
+    rim: new THREE.Color('#F26D5B'),
+    fill: new THREE.Color('#6E1B13'),
+    emissive: new THREE.Color('#280B08'),
   },
-  contacts: {
-    key: '#C8A86B',
-    rim: '#B7CEE4',
-    fill: '#6B8299',
-    emissive: '#171C22',
+  {
+    p: 1.0,
+    camPos: [0.5, 0.8, 12.2],
+    lookAt: [0.8, 0.2, 0.0],
+    key: new THREE.Color('#C8A86B'),
+    rim: new THREE.Color('#B7CEE4'),
+    fill: new THREE.Color('#6F879E'),
+    emissive: new THREE.Color('#181D24'),
   },
-};
+];
 
-function ForgedChain({ scrollRef, mood }) {
+function sampleKeyframes(progress, out) {
+  const clamped = Math.max(0, Math.min(1, progress));
+  let a = KEYFRAMES[0];
+  let b = KEYFRAMES[KEYFRAMES.length - 1];
+  for (let i = 0; i < KEYFRAMES.length - 1; i++) {
+    if (clamped >= KEYFRAMES[i].p && clamped <= KEYFRAMES[i + 1].p) {
+      a = KEYFRAMES[i];
+      b = KEYFRAMES[i + 1];
+      break;
+    }
+  }
+  const span = b.p - a.p || 1;
+  const rawT = (clamped - a.p) / span;
+  const t = rawT * rawT * (3 - 2 * rawT);
+
+  out.camX = THREE.MathUtils.lerp(a.camPos[0], b.camPos[0], t);
+  out.camY = THREE.MathUtils.lerp(a.camPos[1], b.camPos[1], t);
+  out.camZ = THREE.MathUtils.lerp(a.camPos[2], b.camPos[2], t);
+  out.lookX = THREE.MathUtils.lerp(a.lookAt[0], b.lookAt[0], t);
+  out.lookY = THREE.MathUtils.lerp(a.lookAt[1], b.lookAt[1], t);
+  out.lookZ = THREE.MathUtils.lerp(a.lookAt[2], b.lookAt[2], t);
+
+  out.key.copy(a.key).lerp(b.key, t);
+  out.rim.copy(a.rim).lerp(b.rim, t);
+  out.fill.copy(a.fill).lerp(b.fill, t);
+  out.emissive.copy(a.emissive).lerp(b.emissive, t);
+}
+
+function ForgedChain({ progressRef }) {
   const meshRef = useRef(null);
   const materialRef = useRef(null);
   const keyLightRef = useRef(null);
@@ -52,34 +93,47 @@ function ForgedChain({ scrollRef, mood }) {
   }, [geometry]);
 
   const curve = useMemo(() => {
-    const xScale = isMobile ? 0.52 : 1.0;
+    const xScale = isMobile ? 0.48 : 1.0;
     const points = [
-      new THREE.Vector3(5.6 * xScale, 26, -1.6),
-      new THREE.Vector3(5.2 * xScale, 18, 0.8),
-      new THREE.Vector3(4.5 * xScale, 10, 1.5),
-      new THREE.Vector3(4.1 * xScale, 3.2, 1.8),
-      new THREE.Vector3(3.6 * xScale, -2.5, 1.5),
-      new THREE.Vector3(-2.4 * xScale, -9.5, 0.9),
-      new THREE.Vector3(-3.2 * xScale, -16.5, 1.6),
-      new THREE.Vector3(3.4 * xScale, -23.5, 1.2),
-      new THREE.Vector3(4.0 * xScale, -31, 0.4),
-      new THREE.Vector3(-1.4 * xScale, -39, -1.4),
+      new THREE.Vector3(5.2 * xScale, 32, -1.6),
+      new THREE.Vector3(4.8 * xScale, 22, 0.5),
+      new THREE.Vector3(4.2 * xScale, 12, 1.4),
+      new THREE.Vector3(3.8 * xScale, 3.5, 1.8),
+      new THREE.Vector3(2.8 * xScale, -4.5, 1.5),
+      new THREE.Vector3(-2.1 * xScale, -12.5, 1.1),
+      new THREE.Vector3(-2.6 * xScale, -20.5, 1.5),
+      new THREE.Vector3(2.6 * xScale, -28.5, 1.3),
+      new THREE.Vector3(3.4 * xScale, -36.5, 0.5),
+      new THREE.Vector3(-1.2 * xScale, -45.0, -1.2),
     ];
     return new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.5);
   }, [isMobile]);
 
   const scratch = useMemo(
     () => ({
-      dummy: new THREE.Object3D(),
       pos: new THREE.Vector3(),
       tangent: new THREE.Vector3(),
+      side: new THREE.Vector3(),
+      forward: new THREE.Vector3(),
+      basis: new THREE.Matrix4(),
       quat: new THREE.Quaternion(),
-      twist: new THREE.Quaternion(),
-      targetKey: new THREE.Color(),
-      targetRim: new THREE.Color(),
-      targetFill: new THREE.Color(),
-      targetEmissive: new THREE.Color(),
-      smoothScroll: 0,
+      oddRot: new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2),
+      scale: new THREE.Vector3(1, 1.6, 1),
+      matrix: new THREE.Matrix4(),
+      sampled: {
+        camX: 1.1,
+        camY: 1.8,
+        camZ: 10.6,
+        lookX: 1.4,
+        lookY: 0.8,
+        lookZ: 0.0,
+        key: new THREE.Color('#E8EEF5'),
+        rim: new THREE.Color('#FFFFFF'),
+        fill: new THREE.Color('#9FB6CE'),
+        emissive: new THREE.Color('#161C24'),
+      },
+      smoothProgress: 0,
+      lookCurrent: new THREE.Vector3(1.4, 0.8, 0),
     }),
     []
   );
@@ -89,66 +143,60 @@ function ForgedChain({ scrollRef, mood }) {
     if (!mesh) return;
 
     const dt = Math.min(delta, 0.05);
-    const targetScroll = scrollRef.current || 0;
-    scratch.smoothScroll += (targetScroll - scratch.smoothScroll) * Math.min(1, dt * 8);
+    const targetProgress = progressRef.current || 0;
+    scratch.smoothProgress += (targetProgress - scratch.smoothProgress) * Math.min(1, dt * 10);
 
+    const p = scratch.smoothProgress;
+    const travelOffset = p * 0.34;
     const elapsed = state.clock.getElapsedTime();
-    const travelOffset = scratch.smoothScroll * 0.46;
 
     for (let i = 0; i < LINK_COUNT; i++) {
-      const baseT = i / LINK_COUNT;
-      let t = (baseT + travelOffset) % 1;
+      let t = (i / LINK_COUNT + travelOffset) % 1;
       if (t < 0) t += 1;
 
       curve.getPointAt(t, scratch.pos);
       curve.getTangentAt(t, scratch.tangent).normalize();
 
-      scratch.pos.y += 6.5 - scratch.smoothScroll * 13.0;
-      scratch.pos.x += Math.sin(elapsed * 0.45 + i * 0.14) * 0.05;
+      scratch.pos.y += 9.5 - p * 16.0;
+      scratch.pos.x += Math.sin(elapsed * 0.35 + i * 0.12) * 0.03;
 
-      scratch.quat.setFromUnitVectors(UP_AXIS, scratch.tangent);
+      const refAxis = Math.abs(scratch.tangent.dot(Z_REF)) > 0.98 ? X_FALLBACK : Z_REF;
+      scratch.side.crossVectors(scratch.tangent, refAxis).normalize();
+      scratch.forward.crossVectors(scratch.side, scratch.tangent).normalize();
 
-      const angle = (i % 2 === 0 ? Math.PI / 2 : 0) + elapsed * 0.12 + scratch.smoothScroll * 1.4;
-      scratch.twist.setFromAxisAngle(scratch.tangent, angle);
-      scratch.quat.premultiply(scratch.twist);
+      scratch.basis.makeBasis(scratch.side, scratch.tangent, scratch.forward);
+      scratch.quat.setFromRotationMatrix(scratch.basis);
 
-      scratch.dummy.position.copy(scratch.pos);
-      scratch.dummy.quaternion.copy(scratch.quat);
-      scratch.dummy.scale.set(1, 1.6, 1);
-      scratch.dummy.updateMatrix();
-      mesh.setMatrixAt(i, scratch.dummy.matrix);
+      if (i % 2 === 1) {
+        scratch.quat.multiply(scratch.oddRot);
+      }
+
+      scratch.matrix.compose(scratch.pos, scratch.quat, scratch.scale);
+      mesh.setMatrixAt(i, scratch.matrix);
     }
 
     mesh.instanceMatrix.needsUpdate = true;
 
-    const camX = (isMobile ? 0.4 : 1.0) + Math.sin(scratch.smoothScroll * Math.PI * 1.4) * (isMobile ? 0.55 : 1.25);
-    const camY = 1.4 - scratch.smoothScroll * 2.8;
-    const camZ = isMobile ? 13.4 : 10.8;
+    sampleKeyframes(p, scratch.sampled);
+    const camLerp = 1 - Math.exp(-dt * 6);
+    const mobileZOffset = isMobile ? 2.6 : 0;
+    const targetCamX = isMobile ? scratch.sampled.camX * 0.45 : scratch.sampled.camX;
+    const targetLookX = isMobile ? scratch.sampled.lookX * 0.35 : scratch.sampled.lookX;
 
-    camera.position.x += (camX - camera.position.x) * Math.min(1, dt * 4);
-    camera.position.y += (camY - camera.position.y) * Math.min(1, dt * 4);
-    camera.position.z += (camZ - camera.position.z) * Math.min(1, dt * 4);
-    camera.lookAt(isMobile ? 0.4 : 1.3, camY - 0.6, 0);
+    camera.position.x += (targetCamX - camera.position.x) * camLerp;
+    camera.position.y += (scratch.sampled.camY - camera.position.y) * camLerp;
+    camera.position.z += (scratch.sampled.camZ + mobileZOffset - camera.position.z) * camLerp;
 
-    const palette = MOOD_LIGHTS[mood] || MOOD_LIGHTS.hero;
-    const colorLerp = 1 - Math.exp(-dt * 5.2);
+    scratch.lookCurrent.x += (targetLookX - scratch.lookCurrent.x) * camLerp;
+    scratch.lookCurrent.y += (scratch.sampled.lookY - scratch.lookCurrent.y) * camLerp;
+    scratch.lookCurrent.z += (scratch.sampled.lookZ - scratch.lookCurrent.z) * camLerp;
+    camera.lookAt(scratch.lookCurrent);
 
-    if (keyLightRef.current) {
-      scratch.targetKey.set(palette.key);
-      keyLightRef.current.color.lerp(scratch.targetKey, colorLerp);
-    }
-    if (rimLightRef.current) {
-      scratch.targetRim.set(palette.rim);
-      rimLightRef.current.color.lerp(scratch.targetRim, colorLerp);
-    }
-    if (fillLightRef.current) {
-      scratch.targetFill.set(palette.fill);
-      fillLightRef.current.color.lerp(scratch.targetFill, colorLerp);
-    }
-    if (materialRef.current) {
-      scratch.targetEmissive.set(palette.emissive);
-      materialRef.current.emissive.lerp(scratch.targetEmissive, colorLerp);
-    }
+    const colorLerp = 1 - Math.exp(-dt * 7);
+    if (keyLightRef.current) keyLightRef.current.color.lerp(scratch.sampled.key, colorLerp);
+    if (rimLightRef.current) rimLightRef.current.color.lerp(scratch.sampled.rim, colorLerp);
+    if (fillLightRef.current) fillLightRef.current.color.lerp(scratch.sampled.fill, colorLerp);
+    if (materialRef.current) materialRef.current.emissive.lerp(scratch.sampled.emissive, colorLerp);
   });
 
   return (
@@ -160,19 +208,19 @@ function ForgedChain({ scrollRef, mood }) {
       <directionalLight
         ref={keyLightRef}
         position={[7, 9, 10]}
-        intensity={5.4}
+        intensity={5.6}
         color="#E8EEF5"
       />
       <directionalLight
         ref={rimLightRef}
         position={[-8, 3, 6]}
-        intensity={3.6}
+        intensity={3.8}
         color="#FFFFFF"
       />
       <pointLight
         ref={fillLightRef}
         position={[4, -5, 8]}
-        intensity={28}
+        intensity={30}
         distance={28}
         decay={1.6}
         color="#9FB6CE"
@@ -219,11 +267,11 @@ function ForgedChain({ scrollRef, mood }) {
           color="#6e7580"
           metalness={1}
           roughness={0.18}
-          envMapIntensity={1.8}
+          envMapIntensity={1.85}
           clearcoat={0.35}
           clearcoatRoughness={0.15}
           emissive="#161C24"
-          emissiveIntensity={0.45}
+          emissiveIntensity={0.48}
         />
       </instancedMesh>
     </>
@@ -248,7 +296,7 @@ class SceneErrorBoundary extends Component {
   }
 }
 
-export default function ChainScene({ scrollRef, mood }) {
+export default function ChainScene({ progressRef }) {
   const [webglOk, setWebglOk] = useState(true);
 
   useEffect(() => {
@@ -270,7 +318,7 @@ export default function ChainScene({ scrollRef, mood }) {
       <SceneErrorBoundary>
         <Canvas
           dpr={[1, 2]}
-          camera={{ position: [1.0, 1.4, 10.8], fov: 42, near: 0.1, far: 80 }}
+          camera={{ position: [1.1, 1.8, 10.6], fov: 42, near: 0.1, far: 80 }}
           gl={{
             antialias: true,
             alpha: false,
@@ -285,7 +333,7 @@ export default function ChainScene({ scrollRef, mood }) {
             });
           }}
         >
-          <ForgedChain scrollRef={scrollRef} mood={mood} />
+          <ForgedChain progressRef={progressRef} />
         </Canvas>
       </SceneErrorBoundary>
     </div>
