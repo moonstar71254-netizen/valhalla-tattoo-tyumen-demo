@@ -7,74 +7,55 @@ const LINK_COUNT = 80;
 const Z_REF = new THREE.Vector3(0, 0, 1);
 const X_FALLBACK = new THREE.Vector3(1, 0, 0);
 
-const KEYFRAMES = [
+export const SCENE_CAMERA_PRESETS = [
   {
-    p: 0.0,
-    camPos: [1.1, 1.8, 10.6],
-    lookAt: [1.4, 0.8, 0.0],
-    key: new THREE.Color('#E8EEF5'),
-    rim: new THREE.Color('#FFFFFF'),
-    fill: new THREE.Color('#9FB6CE'),
-    emissive: new THREE.Color('#161C24'),
+    cam: [0.8, 1.4, 9.8],
+    look: [1.5, 0.5, 0.0],
+    yShift: 8.5,
+    key: '#E8EEF5',
+    rim: '#FFFFFF',
+    fill: '#B6CBE0',
+    emissive: '#1A222E',
   },
   {
-    p: 0.37,
-    camPos: [-1.4, 0.6, 8.6],
-    lookAt: [0.4, -0.3, 0.4],
-    key: new THREE.Color('#C49B66'),
-    rim: new THREE.Color('#F5D3A4'),
-    fill: new THREE.Color('#78532A'),
-    emissive: new THREE.Color('#24170B'),
+    cam: [-2.8, 2.2, 8.2],
+    look: [0.9, -0.3, 0.6],
+    yShift: 4.0,
+    key: '#C49B66',
+    rim: '#FFE0B2',
+    fill: '#8E6230',
+    emissive: '#291A0C',
   },
   {
-    p: 0.65,
-    camPos: [2.2, -0.4, 6.8],
-    lookAt: [0.9, -0.5, 1.1],
-    key: new THREE.Color('#B83B2A'),
-    rim: new THREE.Color('#F26D5B'),
-    fill: new THREE.Color('#6E1B13'),
-    emissive: new THREE.Color('#280B08'),
+    cam: [1.8, -0.2, 5.3],
+    look: [1.4, -0.4, 1.4],
+    yShift: -0.5,
+    key: '#D8A96E',
+    rim: '#F5DFC2',
+    fill: '#7F5932',
+    emissive: '#26180D',
   },
   {
-    p: 1.0,
-    camPos: [0.5, 0.8, 12.2],
-    lookAt: [0.8, 0.2, 0.0],
-    key: new THREE.Color('#C8A86B'),
-    rim: new THREE.Color('#B7CEE4'),
-    fill: new THREE.Color('#6F879E'),
-    emissive: new THREE.Color('#181D24'),
+    cam: [3.2, -3.1, 6.2],
+    look: [1.5, -0.5, 1.1],
+    yShift: -5.0,
+    key: '#B83B2A',
+    rim: '#FF7966',
+    fill: '#8A2116',
+    emissive: '#300C08',
+  },
+  {
+    cam: [-0.9, 0.9, 11.4],
+    look: [1.2, 0.2, 0.0],
+    yShift: -9.0,
+    key: '#C8A86B',
+    rim: '#C8DCF0',
+    fill: '#7D96AE',
+    emissive: '#1B222B',
   },
 ];
 
-function sampleKeyframes(progress, out) {
-  const clamped = Math.max(0, Math.min(1, progress));
-  let a = KEYFRAMES[0];
-  let b = KEYFRAMES[KEYFRAMES.length - 1];
-  for (let i = 0; i < KEYFRAMES.length - 1; i++) {
-    if (clamped >= KEYFRAMES[i].p && clamped <= KEYFRAMES[i + 1].p) {
-      a = KEYFRAMES[i];
-      b = KEYFRAMES[i + 1];
-      break;
-    }
-  }
-  const span = b.p - a.p || 1;
-  const rawT = (clamped - a.p) / span;
-  const t = rawT * rawT * (3 - 2 * rawT);
-
-  out.camX = THREE.MathUtils.lerp(a.camPos[0], b.camPos[0], t);
-  out.camY = THREE.MathUtils.lerp(a.camPos[1], b.camPos[1], t);
-  out.camZ = THREE.MathUtils.lerp(a.camPos[2], b.camPos[2], t);
-  out.lookX = THREE.MathUtils.lerp(a.lookAt[0], b.lookAt[0], t);
-  out.lookY = THREE.MathUtils.lerp(a.lookAt[1], b.lookAt[1], t);
-  out.lookZ = THREE.MathUtils.lerp(a.lookAt[2], b.lookAt[2], t);
-
-  out.key.copy(a.key).lerp(b.key, t);
-  out.rim.copy(a.rim).lerp(b.rim, t);
-  out.fill.copy(a.fill).lerp(b.fill, t);
-  out.emissive.copy(a.emissive).lerp(b.emissive, t);
-}
-
-function ForgedChain({ progressRef }) {
+function ForgedChain({ sceneStateRef, pointerRef }) {
   const meshRef = useRef(null);
   const materialRef = useRef(null);
   const keyLightRef = useRef(null);
@@ -83,7 +64,6 @@ function ForgedChain({ progressRef }) {
   const { size, camera } = useThree();
 
   const isMobile = size.width < 768;
-
   const geometry = useMemo(() => new THREE.TorusGeometry(0.5, 0.12, 24, 48), []);
 
   useEffect(() => {
@@ -93,18 +73,18 @@ function ForgedChain({ progressRef }) {
   }, [geometry]);
 
   const curve = useMemo(() => {
-    const xScale = isMobile ? 0.48 : 1.0;
+    const xScale = isMobile ? 0.54 : 1.0;
     const points = [
-      new THREE.Vector3(5.2 * xScale, 32, -1.6),
-      new THREE.Vector3(4.8 * xScale, 22, 0.5),
-      new THREE.Vector3(4.2 * xScale, 12, 1.4),
-      new THREE.Vector3(3.8 * xScale, 3.5, 1.8),
-      new THREE.Vector3(2.8 * xScale, -4.5, 1.5),
-      new THREE.Vector3(-2.1 * xScale, -12.5, 1.1),
-      new THREE.Vector3(-2.6 * xScale, -20.5, 1.5),
-      new THREE.Vector3(2.6 * xScale, -28.5, 1.3),
-      new THREE.Vector3(3.4 * xScale, -36.5, 0.5),
-      new THREE.Vector3(-1.2 * xScale, -45.0, -1.2),
+      new THREE.Vector3(5.0 * xScale, 32, -1.2),
+      new THREE.Vector3(4.5 * xScale, 22, 0.7),
+      new THREE.Vector3(3.8 * xScale, 12, 1.5),
+      new THREE.Vector3(3.4 * xScale, 3.5, 1.9),
+      new THREE.Vector3(2.4 * xScale, -4.5, 1.6),
+      new THREE.Vector3(-1.8 * xScale, -12.5, 1.2),
+      new THREE.Vector3(-2.4 * xScale, -20.5, 1.6),
+      new THREE.Vector3(2.5 * xScale, -28.5, 1.4),
+      new THREE.Vector3(3.2 * xScale, -36.5, 0.6),
+      new THREE.Vector3(-1.1 * xScale, -45.0, -1.0),
     ];
     return new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.5);
   }, [isMobile]);
@@ -120,20 +100,9 @@ function ForgedChain({ progressRef }) {
       oddRot: new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2),
       scale: new THREE.Vector3(1, 1.6, 1),
       matrix: new THREE.Matrix4(),
-      sampled: {
-        camX: 1.1,
-        camY: 1.8,
-        camZ: 10.6,
-        lookX: 1.4,
-        lookY: 0.8,
-        lookZ: 0.0,
-        key: new THREE.Color('#E8EEF5'),
-        rim: new THREE.Color('#FFFFFF'),
-        fill: new THREE.Color('#9FB6CE'),
-        emissive: new THREE.Color('#161C24'),
-      },
-      smoothProgress: 0,
-      lookCurrent: new THREE.Vector3(1.4, 0.8, 0),
+      smoothPtrX: 0,
+      smoothPtrY: 0,
+      lookVec: new THREE.Vector3(1.5, 0.5, 0),
     }),
     []
   );
@@ -143,22 +112,18 @@ function ForgedChain({ progressRef }) {
     if (!mesh) return;
 
     const dt = Math.min(delta, 0.05);
-    const targetProgress = progressRef.current || 0;
-    scratch.smoothProgress += (targetProgress - scratch.smoothProgress) * Math.min(1, dt * 10);
-
-    const p = scratch.smoothProgress;
-    const travelOffset = p * 0.34;
+    const s = sceneStateRef.current;
     const elapsed = state.clock.getElapsedTime();
 
     for (let i = 0; i < LINK_COUNT; i++) {
-      let t = (i / LINK_COUNT + travelOffset) % 1;
+      let t = (i / LINK_COUNT + s.chainOffset) % 1;
       if (t < 0) t += 1;
 
       curve.getPointAt(t, scratch.pos);
       curve.getTangentAt(t, scratch.tangent).normalize();
 
-      scratch.pos.y += 9.5 - p * 16.0;
-      scratch.pos.x += Math.sin(elapsed * 0.35 + i * 0.12) * 0.03;
+      scratch.pos.y += s.yShift + Math.sin(elapsed * 0.85 + i * 0.22) * 0.04;
+      scratch.pos.x += Math.cos(elapsed * 0.65 + i * 0.18) * 0.045;
 
       const refAxis = Math.abs(scratch.tangent.dot(Z_REF)) > 0.98 ? X_FALLBACK : Z_REF;
       scratch.side.crossVectors(scratch.tangent, refAxis).normalize();
@@ -177,85 +142,74 @@ function ForgedChain({ progressRef }) {
 
     mesh.instanceMatrix.needsUpdate = true;
 
-    sampleKeyframes(p, scratch.sampled);
-    const camLerp = 1 - Math.exp(-dt * 6);
-    const mobileZOffset = isMobile ? 2.6 : 0;
-    const targetCamX = isMobile ? scratch.sampled.camX * 0.45 : scratch.sampled.camX;
-    const targetLookX = isMobile ? scratch.sampled.lookX * 0.35 : scratch.sampled.lookX;
+    const ptrLerp = 1 - Math.exp(-dt * 5.5);
+    scratch.smoothPtrX += (pointerRef.current.x - scratch.smoothPtrX) * ptrLerp;
+    scratch.smoothPtrY += (pointerRef.current.y - scratch.smoothPtrY) * ptrLerp;
 
-    camera.position.x += (targetCamX - camera.position.x) * camLerp;
-    camera.position.y += (scratch.sampled.camY - camera.position.y) * camLerp;
-    camera.position.z += (scratch.sampled.camZ + mobileZOffset - camera.position.z) * camLerp;
+    const mobileZ = isMobile ? 2.4 : 0;
+    const xMul = isMobile ? 0.48 : 1.0;
 
-    scratch.lookCurrent.x += (targetLookX - scratch.lookCurrent.x) * camLerp;
-    scratch.lookCurrent.y += (scratch.sampled.lookY - scratch.lookCurrent.y) * camLerp;
-    scratch.lookCurrent.z += (scratch.sampled.lookZ - scratch.lookCurrent.z) * camLerp;
-    camera.lookAt(scratch.lookCurrent);
+    camera.position.set(
+      s.camX * xMul + scratch.smoothPtrX * 0.45,
+      s.camY + scratch.smoothPtrY * 0.45,
+      s.camZ + mobileZ
+    );
+    scratch.lookVec.set(s.lookX * xMul, s.lookY, s.lookZ);
+    camera.lookAt(scratch.lookVec);
 
-    const colorLerp = 1 - Math.exp(-dt * 7);
-    if (keyLightRef.current) keyLightRef.current.color.lerp(scratch.sampled.key, colorLerp);
-    if (rimLightRef.current) rimLightRef.current.color.lerp(scratch.sampled.rim, colorLerp);
-    if (fillLightRef.current) fillLightRef.current.color.lerp(scratch.sampled.fill, colorLerp);
-    if (materialRef.current) materialRef.current.emissive.lerp(scratch.sampled.emissive, colorLerp);
+    if (keyLightRef.current) keyLightRef.current.color.setRGB(s.keyR, s.keyG, s.keyB);
+    if (rimLightRef.current) rimLightRef.current.color.setRGB(s.rimR, s.rimG, s.rimB);
+    if (fillLightRef.current) fillLightRef.current.color.setRGB(s.fillR, s.fillG, s.fillB);
+    if (materialRef.current) materialRef.current.emissive.setRGB(s.emR, s.emG, s.emB);
   });
 
   return (
     <>
       <color attach="background" args={['#050505']} />
-      <fog attach="fog" args={['#050505', 14, 34]} />
+      <fog attach="fog" args={['#050505', 15, 36]} />
 
-      <ambientLight intensity={0.45} color="#dce3ec" />
-      <directionalLight
-        ref={keyLightRef}
-        position={[7, 9, 10]}
-        intensity={5.6}
-        color="#E8EEF5"
-      />
-      <directionalLight
-        ref={rimLightRef}
-        position={[-8, 3, 6]}
-        intensity={3.8}
-        color="#FFFFFF"
-      />
+      <ambientLight intensity={0.62} color="#e5ecf5" />
+      <directionalLight ref={keyLightRef} position={[6, 9, 10]} intensity={6.4} color="#E8EEF5" />
+      <directionalLight ref={rimLightRef} position={[-8, 4, 7]} intensity={4.6} color="#FFFFFF" />
       <pointLight
         ref={fillLightRef}
-        position={[4, -5, 8]}
-        intensity={30}
-        distance={28}
-        decay={1.6}
-        color="#9FB6CE"
+        position={[4, -4, 8]}
+        intensity={36}
+        distance={30}
+        decay={1.5}
+        color="#B6CBE0"
       />
 
       <Environment resolution={256} frames={1}>
         <Lightformer
           form="rect"
-          intensity={4.5}
+          intensity={5.6}
           color="#ffffff"
-          scale={[14, 4, 1]}
-          position={[0, 8, 4]}
+          scale={[16, 5, 1]}
+          position={[0, 8, 5]}
           rotation={[Math.PI / 2.4, 0, 0]}
         />
         <Lightformer
           form="rect"
-          intensity={3.8}
-          color="#e8eef5"
-          scale={[5, 14, 1]}
-          position={[9, 1, 5]}
-          rotation={[0, -Math.PI / 2.6, 0]}
+          intensity={4.8}
+          color="#edf3fa"
+          scale={[6, 15, 1]}
+          position={[9, 1, 6]}
+          rotation={[0, -Math.PI / 2.5, 0]}
         />
         <Lightformer
           form="rect"
-          intensity={3.2}
-          color="#d8dee8"
-          scale={[5, 14, 1]}
-          position={[-9, -1, 4]}
-          rotation={[0, Math.PI / 2.6, 0]}
+          intensity={4.0}
+          color="#dde5f0"
+          scale={[6, 15, 1]}
+          position={[-9, -1, 5]}
+          rotation={[0, Math.PI / 2.5, 0]}
         />
         <Lightformer
           form="ring"
-          intensity={2.4}
-          color="#f3e6d3"
-          scale={8}
+          intensity={3.0}
+          color="#f7ebd8"
+          scale={9}
           position={[2, -6, 6]}
           rotation={[-Math.PI / 3, 0, 0]}
         />
@@ -264,14 +218,14 @@ function ForgedChain({ progressRef }) {
       <instancedMesh ref={meshRef} args={[geometry, null, LINK_COUNT]} frustumCulled={false}>
         <meshPhysicalMaterial
           ref={materialRef}
-          color="#6e7580"
+          color="#868f9c"
           metalness={1}
-          roughness={0.18}
-          envMapIntensity={1.85}
-          clearcoat={0.35}
-          clearcoatRoughness={0.15}
-          emissive="#161C24"
-          emissiveIntensity={0.48}
+          roughness={0.16}
+          envMapIntensity={2.25}
+          clearcoat={0.45}
+          clearcoatRoughness={0.14}
+          emissive="#1A222E"
+          emissiveIntensity={0.55}
         />
       </instancedMesh>
     </>
@@ -296,7 +250,7 @@ class SceneErrorBoundary extends Component {
   }
 }
 
-export default function ChainScene({ progressRef }) {
+export default function ChainScene({ sceneStateRef, pointerRef }) {
   const [webglOk, setWebglOk] = useState(true);
 
   useEffect(() => {
@@ -318,13 +272,13 @@ export default function ChainScene({ progressRef }) {
       <SceneErrorBoundary>
         <Canvas
           dpr={[1, 2]}
-          camera={{ position: [1.1, 1.8, 10.6], fov: 42, near: 0.1, far: 80 }}
+          camera={{ position: [0.8, 1.4, 9.8], fov: 42, near: 0.1, far: 80 }}
           gl={{
             antialias: true,
             alpha: false,
             powerPreference: 'high-performance',
             toneMapping: THREE.ACESFilmicToneMapping,
-            toneMappingExposure: 1.18,
+            toneMappingExposure: 1.24,
           }}
           onCreated={({ gl }) => {
             gl.domElement.addEventListener('webglcontextlost', (e) => {
@@ -333,7 +287,7 @@ export default function ChainScene({ progressRef }) {
             });
           }}
         >
-          <ForgedChain progressRef={progressRef} />
+          <ForgedChain sceneStateRef={sceneStateRef} pointerRef={pointerRef} />
         </Canvas>
       </SceneErrorBoundary>
     </div>
